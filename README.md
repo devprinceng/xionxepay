@@ -120,7 +120,7 @@ npm run dev
 ## 💬 Contact & Demo
 Interested in trying the demo or learning more?
 
-📩 Email: team@xionxepay.xyz
+📩 Email: devprinceng@gmail.com
 🐦 Twitter: @DevPrinceNG
 
 Powered by 🧠 abstraction, ⚡ Xion Protocol, and ❤️ from a passionate team building for real-world change.
