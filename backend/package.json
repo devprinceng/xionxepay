@@ -1,0 +1,39 @@
+{
+  "name": "xionpos-backend",
+  "version": "1.0.0",
+  "description": "backend for XionPOS web3 payment solution powered by Xion Protocol",
+  "keywords": [
+    "xionpos",
+    "xion",
+    "web3",
+    "backend"
+  ],
+  "homepage": "https://github.com/devprinceng/xionxepay#readme",
+  "bugs": {
+    "url": "https://github.com/devprinceng/xionxepay/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devprinceng/xionxepay.git"
+  },
+  "license": "ISC",
+  "author": "Prince Ojoi, Oghenetega Benjamin",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongoose": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}
