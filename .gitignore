@@ -3,6 +3,7 @@
 # Deployment and Utility Scripts
 # These scripts are for development/deployment and should not be in version control
 **/commit-script.sh
+**/simple-commit-script.sh
 **/deploy-script.sh
 **/build-script.sh
 **/release-script.sh
