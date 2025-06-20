@@ -1,5 +1,6 @@
 Controller Checklist
 
+post('api/auth/register)
 1. register
 - [ ] Validate name,email, password,phone,address,city,state,country,zip,businessName,category,metaAccountEmail from req.body
 - [ ] Check if vendor exists
@@ -28,6 +29,7 @@ sample request
     "zip": "100001"
 }
 
+post('api/auth/login)
 
 2. login
 - [ ] Validate email, password from req.body
@@ -37,10 +39,19 @@ sample request
 - [ ] Set token cookie
 - [ ] Respond with 200, token, message
 
+sample request
+{
+    "email": "omorakabenjamin3@gmail.com",
+    "password":"Benjamin007$"
+}
+
+
+post('api/auth/logout)
 3. logout
 - [ ] Clear token cookie
 - [ ] Respond with 200, message
 
+post('api/auth/sendVerifyOtp)
 4. sendVerifyOtp
 - [ ] Get vendorID from req.body
 - [ ] Check if vendor exists and not verified
@@ -49,6 +60,7 @@ sample request
 - [ ] Send OTP email (`nodemailer`)
 - [ ] Respond with 200, message
 
+post('api/auth/verifyEmail)
 5. verifyEmail
 - [ ] Get vendorID, otp from req.body
 - [ ] Check if vendor exists and not verified
@@ -56,11 +68,8 @@ sample request
 - [ ] Mark account as verified
 - [ ] Respond with 200, message
 
-6. isAuthenticated
-- [ ] Check authentication (JWT/cookie)
-- [ ] Respond with 200, message
-
-7. sendResetOTP
+post('api/auth/sendResetOTP)
+6. sendResetOTP
 - [ ] Get email from req.body
 - [ ] Check if vendor exists
 - [ ] Generate OTP (6 digits, 10 min expiry)
@@ -68,7 +77,8 @@ sample request
 - [ ] Send OTP email (nodemailer)
 - [ ] Respond with 200, message
 
-8. resetPassword
+post('api/auth/resetPassword)
+7. resetPassword
 - [ ] Get email, otp, newPassword from req.body
 - [ ] Check if vendor exists
 - [ ] Validate OTP and expiry
