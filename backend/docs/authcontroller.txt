@@ -1,13 +1,5 @@
 Controller Checklist
 
-name: { type: String, required: true }, // Vendor's name
-    phone: { type: String, required: true, unique: true }, // Vendor's phone number
-    address: { type: String, required: true }, // Vendor's address
-    city: { type: String, required: true }, // Vendor's city
-    state: { type: String, required: true }, // Vendor's state
-    country: { type: String, required: true }, // Vendor's country
-    zip
-
 1. register
 - [ ] Validate name,email, password,phone,address,city,state,country,zip,businessName,category,metaAccountEmail from req.body
 - [ ] Check if vendor exists
