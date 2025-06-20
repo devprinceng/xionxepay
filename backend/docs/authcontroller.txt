@@ -15,7 +15,7 @@ name: { type: String, required: true }, // Vendor's name
 - [ ] Save new vendor
 - [ ] Generate JWT token
 - [ ] Set token cookie
-- [ ] Send welcome email (nodemailer)
+- [ ] Send welcome email (`nodemailer`)
 - [ ] Respond with 201, token, message
 
 sample request
@@ -54,7 +54,7 @@ sample request
 - [ ] Check if vendor exists and not verified
 - [ ] Generate OTP (6 digits, 10 min expiry)
 - [ ] Save OTP to vendor
-- [ ] Send OTP email (nodemailer)
+- [ ] Send OTP email (`nodemailer`)
 - [ ] Respond with 200, message
 
 5. verifyEmail
@@ -87,6 +87,6 @@ sample request
 General
 - [ ] All responses: JSON with success boolean and message
 - [ ] Use JWT for authentication, cookies for session
-- [ ] Use nodemailer for emails
+- [ ] Use `nodemailer` for emails
 - [ ] Hash passwords with bcrypt
 - [ ] OTPs: 6 digits, 10 min validity
