@@ -2,12 +2,10 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
 import { cn } from '@/lib/utils'
-import { Navigation } from '@/components/navigation'
-import { Footer } from '@/components/footer'
-import { usePathname } from 'next/navigation'
 import React from 'react'
 import { AuthProvider } from '../contexts/auth-context'
 import { Toaster } from 'sonner'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -18,27 +16,6 @@ export const metadata: Metadata = {
   authors: [{ name: 'XionxePay Team' }],
   viewport: 'width=device-width, initial-scale=1',
   themeColor: '#3b82f6',
-}
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
-  const authRoutes = [
-    '/register',
-    '/forgot-password',
-    '/reset-password',
-    '/signin',
-    '/verify-email',
-  ]
-  const isAuthOrVendor =
-    authRoutes.some(route => pathname.startsWith(route)) ||
-    pathname.startsWith('/vendor')
-  return (
-    <>
-      {isAuthOrVendor && <Navigation />}
-      {children}
-      {isAuthOrVendor && <Footer />}
-    </>
-  )
 }
 
 export default function RootLayout({
