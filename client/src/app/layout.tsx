@@ -2,6 +2,10 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
 import { cn } from '@/lib/utils'
+import React from 'react'
+import { AuthProvider } from '../contexts/auth-context'
+import { Toaster } from 'sonner'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -38,7 +42,10 @@ export default function RootLayout({
           
           {/* Main content */}
           <div className="relative z-10">
-            {children}
+            <Toaster position="top-center" richColors closeButton />
+            <AuthProvider>
+            <ProtectedRoute>{children}</ProtectedRoute>
+            </AuthProvider>
           </div>
         </div>
       </body>

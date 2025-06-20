@@ -4,6 +4,7 @@ import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { UserPlus, QrCode, Smartphone, CheckCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
+import Link from 'next/link'
 
 export function HowItWorksSection() {
   const steps = [
@@ -118,12 +119,10 @@ export function HowItWorksSection() {
               crypto payments seamlessly.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="web3-button">
-                Start Free Trial
-              </button>
-              <button className="px-6 py-3 border border-aurora-blue-500 text-aurora-blue-400 rounded-lg hover:bg-aurora-blue-500/10 transition-colors duration-300">
-                Schedule Demo
-              </button>
+              <Link href='/register ' className="web3-button">
+               Get Started
+              </Link>
+              
             </div>
           </div>
         </motion.div>

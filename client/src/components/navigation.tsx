@@ -10,9 +10,9 @@ export function Navigation() {
   const [isOpen, setIsOpen] = React.useState(false)
 
   const navItems = [
-    { href: '/', label: 'Home', icon: QrCode },
-    { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { href: '/wallet', label: 'Wallet', icon: Wallet },
+    // { href: '/', label: 'Home', icon: QrCode },
+    // { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+    // { href: '/wallet', label: 'Wallet', icon: Wallet },
   ]
 
   return (
@@ -32,7 +32,7 @@ export function Navigation() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              {navItems.map((item) => {
+              {/* {navItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <Link
@@ -44,18 +44,22 @@ export function Navigation() {
                     <span>{item.label}</span>
                   </Link>
                 )
-              })}
+              })} */}
             </div>
           </div>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            <Link href="/signin">
             <Button variant="ghost" size="sm">
               Sign In
             </Button>
+            </Link>
+            <Link href="/register">
             <Button variant="gradient" size="sm">
               Get Started
             </Button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -79,7 +83,7 @@ export function Navigation() {
       {isOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-900/20 backdrop-blur-2xl border-t border-white/10">
-            {navItems.map((item) => {
+            {/* {navItems.map((item) => {
               const Icon = item.icon
               return (
                 <Link
@@ -92,14 +96,20 @@ export function Navigation() {
                   <span>{item.label}</span>
                 </Link>
               )
-            })}
+            })} */}
             <div className="pt-4 pb-2 space-y-2">
+            <Link href="/signin">
+            
               <Button variant="ghost" className="w-full justify-start">
                 Sign In
               </Button>
+            </Link>
+            <Link href="/register">
+            
               <Button variant="gradient" className="w-full">
                 Get Started
               </Button>
+            </Link>
             </div>
           </div>
         </div>
