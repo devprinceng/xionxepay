@@ -182,13 +182,9 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     }
 };
 
-// export const isAuthenticated = async (req: Request, res: Response): Promise<void> => {
-//     try {
-//         res.status(200).json({ success: true, message: "Vendor is Authenticated " });
-//     } catch (error) {
-//         res.status(500).json({ success: false, message: "Internal server error" });
-//     }
-// };
+// This function sends a password reset OTP to the vendor's email
+// It generates a 6-digit OTP, saves it to the vendor's record, and sends an email with the OTP
+// The OTP is valid for 10 minutes
 
 export const sendResetOTP = async (req: Request, res: Response): Promise<void> => {
     const { email } = req.body;
