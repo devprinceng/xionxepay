@@ -12,13 +12,13 @@ import { FooterNav } from '@/components/footer-nav'
 export default function HomePage() {
   return (
     <main className="min-h-screen">
-      <Navigation />
+     
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />
       <StatsSection />
-      <Footer />
-      <FooterNav />
+      
+      {/* <FooterNav /> */}
     </main>
   )
 }

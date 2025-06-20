@@ -7,8 +7,10 @@ import { motion } from 'framer-motion'
 import { Spotlight } from '@/components/ui/spotlight'
 import { BackgroundBeams } from '@/components/ui/background-beams'
 import { Meteors } from '@/components/ui/meteors'
+import Link from 'next/link'
 
 export function HeroSection() {
+
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-24 md:pt-16 overflow-hidden">
       {/* Enhanced Background Effects */}
@@ -25,7 +27,7 @@ export function HeroSection() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className="grid xl:grid-cols-2 gap-12 items-center">
           {/* Left Column - Content */}
           <motion.div
             initial={{ opacity: 0, x: -50 }}
@@ -105,12 +107,12 @@ export function HeroSection() {
               transition={{ duration: 0.6, delay: 0.7 }}
               className="flex flex-col sm:flex-row gap-4"
             >
+              <Link href="/register">
               <Button variant="gradient" size="xl" className="glow-effect">
                 Start Accepting Payments
               </Button>
-              <Button variant="outline" size="xl">
-                Watch Demo
-              </Button>
+              </Link>
+              
             </motion.div>
 
             {/* Trust Indicators */}
@@ -151,7 +153,7 @@ export function HeroSection() {
                 className="relative z-10 bg-gradient-to-br from-gray-800 to-gray-900 p-8 rounded-3xl border border-gray-700/50 shadow-2xl glow-effect"
               >
                 {/* Mock QR Code */}
-                <div className="w-64 h-64 bg-white rounded-2xl p-4 mb-6">
+                <div className="w-64 h-64 bg-white rounded-2xl p-4 mb-6 mx-auto">
                   <div className="w-full h-full bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
                     <QrCode className="w-32 h-32 text-white" />
                   </div>
@@ -173,17 +175,17 @@ export function HeroSection() {
               <motion.div
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center shadow-lg"
+                className="absolute z-20 -top-4 -right-4 w-12 h-12 xl:w-16 xl:h-16 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center shadow-lg"
               >
-                <Zap className="w-8 h-8 text-white" />
+                <Zap className="w-6 h-6 xl:w-8 xl:h-8 text-white" />
               </motion.div>
 
               <motion.div
                 animate={{ y: [10, -10, 10] }}
                 transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-r from-aurora-teal-500 to-aurora-blue-500 rounded-full flex items-center justify-center shadow-lg"
+                className="absolute z-20 -bottom-4 -left-4 w-12 h-12 xl:w-16 xl:h-16 bg-gradient-to-r from-aurora-teal-500 to-aurora-blue-500 rounded-full flex items-center justify-center shadow-lg"
               >
-                <Shield className="w-6 h-6 text-white" />
+                <Shield className="w-6 h-6 xl:w-8 xl:h-8 text-white" />
               </motion.div>
             </div>
           </motion.div>
