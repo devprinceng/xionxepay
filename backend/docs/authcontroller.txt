@@ -1,0 +1,73 @@
+Controller Checklist
+
+name: { type: String, required: true }, // Vendor's name
+    phone: { type: String, required: true, unique: true }, // Vendor's phone number
+    address: { type: String, required: true }, // Vendor's address
+    city: { type: String, required: true }, // Vendor's city
+    state: { type: String, required: true }, // Vendor's state
+    country: { type: String, required: true }, // Vendor's country
+    zip
+
+1. register
+- [ ] Validate name,email, password,phone,address,city,state,country,zip,businessName,category,metaAccountEmail from req.body
+- [ ] Check if vendor exists
+- [ ] Hash password (bcrypt)
+- [ ] Save new vendor
+- [ ] Generate JWT token
+- [ ] Set token cookie
+- [ ] Send welcome email (nodemailer)
+- [ ] Respond with 201, token, message
+
+2. login
+- [ ] Validate email, password from req.body
+- [ ] Check if vendor exists
+- [ ] Compare password (bcrypt)
+- [ ] Generate JWT token
+- [ ] Set token cookie
+- [ ] Respond with 200, token, message
+
+3. logout
+- [ ] Clear token cookie
+- [ ] Respond with 200, message
+
+4. sendVerifyOtp
+- [ ] Get vendorID from req.body
+- [ ] Check if vendor exists and not verified
+- [ ] Generate OTP (6 digits, 10 min expiry)
+- [ ] Save OTP to vendor
+- [ ] Send OTP email (nodemailer)
+- [ ] Respond with 200, message
+
+5. verifyEmail
+- [ ] Get vendorID, otp from req.body
+- [ ] Check if vendor exists and not verified
+- [ ] Validate OTP and expiry
+- [ ] Mark account as verified
+- [ ] Respond with 200, message
+
+6. isAuthenticated
+- [ ] Check authentication (JWT/cookie)
+- [ ] Respond with 200, message
+
+7. sendResetOTP
+- [ ] Get email from req.body
+- [ ] Check if vendor exists
+- [ ] Generate OTP (6 digits, 10 min expiry)
+- [ ] Save OTP to vendor
+- [ ] Send OTP email (nodemailer)
+- [ ] Respond with 200, message
+
+8. resetPassword
+- [ ] Get email, otp, newPassword from req.body
+- [ ] Check if vendor exists
+- [ ] Validate OTP and expiry
+- [ ] Hash new password (bcrypt)
+- [ ] Update vendor password
+- [ ] Respond with 200, message
+
+General
+- [ ] All responses: JSON with success boolean and message
+- [ ] Use JWT for authentication, cookies for session
+- [ ] Use nodemailer for emails
+- [ ] Hash passwords with bcrypt
+- [ ] OTPs: 6 digits, 10 min validity
