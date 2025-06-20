@@ -18,6 +18,25 @@ name: { type: String, required: true }, // Vendor's name
 - [ ] Send welcome email (nodemailer)
 - [ ] Respond with 201, token, message
 
+sample request
+
+{
+    "name": "John Doe",
+    "email": "omorakabenjamin3@gmail.com",
+    "password": "Benjamin007$",
+    "businessName": "John's Electronics",
+    "businessDescription": "We sell top-quality electronic gadgets and accessories.",
+    "category": "Electronics",
+    "metaAccountEmail": "stickeyz2000@hotmail.com",
+    "phone": "+1234567890",
+    "address": "123 Tech Street",
+    "city": "Lagos",
+    "state": "Lagos",
+    "country": "Nigeria",
+    "zip": "100001"
+}
+
+
 2. login
 - [ ] Validate email, password from req.body
 - [ ] Check if vendor exists
