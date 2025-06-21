@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const vendorSchema = new mongoose.Schema({
     name: { type: String, required: true }, // Vendor's name
-    email: { type: String, unique: true }, // Vendor's email, must be unique
+    email: { type: String,required:true, unique: true }, // Vendor's email, must be unique
     password: String, // Vendor's password, can be hashed later
     businessName: { type: String, unique: true }, // Unique business name for the vendor
     businessDescription: { type: String}, // Description of the vendor's
@@ -14,7 +14,7 @@ const vendorSchema = new mongoose.Schema({
     state: { type: String, required: true }, // Vendor's state
     country: { type: String, required: true }, // Vendor's country
     zip: { type: String, required: true }, // Vendor's zip code
-    logo: { type: String, default: null }, // URL to vendor's profile
+    logo: { type: String, default: null }, // URL to vendor's business logo
     isVerified: {
         type: Boolean,
         default: false, // Indicates if the user's email is verified

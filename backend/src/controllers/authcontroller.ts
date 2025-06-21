@@ -15,19 +15,6 @@ const options: SignOptions = {
 export const register = async (req: Request, res: Response): Promise<void> => {
     const { name, email, password,businessName,category,metaAccountEmail,phone,address,city,state,country,zip } = req.body;
 
-// name: { type: String, required: true }, // Vendor's name
-//     email: { type: String, unique: true }, // Vendor's email, must be unique
-//     password: String, // Vendor's password, can be hashed later
-//     businessName: { type: String, unique: true }, // Unique business name for the vendor
-//     businessDescription: { type: String}, // Description of the vendor's
-//     category: String, // Category of the vendor's business
-//     metaAccountEmail: { type: String, unique: true }, // Meta account email for the vendor
-//     phone: { type: String, required: true, unique: true }, // Vendor's phone number
-//     address: { type: String, required: true }, // Vendor's address
-//     city: { type: String, required: true }, // Vendor's city
-//     state: { type: String, required: true }, // Vendor's state
-//     country: { type: String, required: true }, // Vendor's country
-//     zip: { type: String, required: true }, // Vendor's zip code
 
     if (!name || !email || !password || !businessName || !category || !metaAccountEmail || !phone || !address || !city || !state || !country || !zip) {
         res.status(400).json({ success: false, message: "All fields are required" });
@@ -195,13 +182,9 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     }
 };
 
-// export const isAuthenticated = async (req: Request, res: Response): Promise<void> => {
-//     try {
-//         res.status(200).json({ success: true, message: "Vendor is Authenticated " });
-//     } catch (error) {
-//         res.status(500).json({ success: false, message: "Internal server error" });
-//     }
-// };
+// This function sends a password reset OTP to the vendor's email
+// It generates a 6-digit OTP, saves it to the vendor's record, and sends an email with the OTP
+// The OTP is valid for 10 minutes
 
 export const sendResetOTP = async (req: Request, res: Response): Promise<void> => {
     const { email } = req.body;
