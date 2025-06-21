@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .web3-gradient-text {
+    @apply bg-gradient-to-r from-aurora-blue-400 via-aurora-cyan-400 to-aurora-teal-400 bg-clip-text text-transparent;
+  }
+
+  .web3-gradient-bg {
+    @apply bg-gradient-to-br from-aurora-blue-600/20 via-aurora-cyan-600/20 to-aurora-teal-600/20;
+  }
+
+  .web3-card {
+    @apply bg-gradient-to-br from-gray-900/50 to-gray-800/50 backdrop-blur-xl border border-gray-700/50 rounded-xl;
+  }
+
+  .web3-button {
+    @apply bg-gradient-to-r from-aurora-blue-600 to-aurora-cyan-600 hover:from-aurora-blue-700 hover:to-aurora-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl;
+  }
+
+  .web3-button-outline {
+    @apply border-2 border-aurora-blue-500 bg-transparent text-aurora-blue-400 hover:bg-aurora-blue-500/10 hover:text-aurora-blue-300 font-semibold py-3 px-6 rounded-lg transition-all duration-300;
+    background: linear-gradient(135deg, transparent, transparent),
+                linear-gradient(135deg, #3b82f6, #06b6d4);
+    background-clip: padding-box, border-box;
+    background-origin: padding-box, border-box;
+  }
+  
+  .floating-orb {
+    @apply absolute rounded-full blur-xl opacity-70 animate-float;
+  }
+  
+  .floating-orb-1 {
+    @apply w-72 h-72 bg-aurora-blue-500/20 top-10 -left-20;
+    animation-delay: 0s;
+  }
+
+  .floating-orb-2 {
+    @apply w-96 h-96 bg-aurora-cyan-500/20 top-1/2 -right-32;
+    animation-delay: 2s;
+  }
+
+  .floating-orb-3 {
+    @apply w-64 h-64 bg-aurora-teal-500/20 bottom-20 left-1/3;
+    animation-delay: 4s;
+  }
+  
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  .glow-effect {
+    box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.2),
+      0 0 40px rgba(6, 182, 212, 0.15),
+      0 0 60px rgba(20, 184, 166, 0.1);
+  }
+
+  .text-glow {
+    text-shadow:
+      0 0 10px rgba(59, 130, 246, 0.4),
+      0 0 20px rgba(6, 182, 212, 0.3),
+      0 0 30px rgba(20, 184, 166, 0.2);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #3b82f6, #06b6d4);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #2563eb, #0891b2);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(59, 130, 246, 0.3);
+  color: white;
+}
