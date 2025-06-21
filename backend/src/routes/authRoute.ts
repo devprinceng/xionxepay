@@ -3,7 +3,6 @@ import {
   register,
   login,
   logout,
-  sendVerifyOtp,
   verifyEmail,
   sendResetOTP,
   resetPassword,
@@ -20,8 +19,8 @@ const authRouter = express.Router();
 authRouter.post("/register", register); // import { register } from '../controllers/authController.js';
 authRouter.post("/login", login); // import { login } from '../controllers/authController.js';
 authRouter.post("/logout", logout); // import { logout } from '../controllers/authController.js';
-authRouter.post("/sendVerifyOtp", isAuthenticated, sendVerifyOtp); // import { sendVerifyOtp } from '../controllers/authController.js';
-authRouter.post("verify-account",isAuthenticated, verifyEmail); // import { verifyEmail } from '../controllers/authController.js';
+// authRouter.post("/sendVerifyOtp", isAuthenticated, sendVerifyOtp); // import { sendVerifyOtp } from '../controllers/authController.js';
+authRouter.post("/verify-email", verifyEmail); // import { verifyEmail } from '../controllers/authController.js';
 authRouter.post("/send-reset-otp",isAuthenticated, sendResetOTP); // import { sendResetOTP } from '../controllers/authController.js';
 authRouter.post("/reset-password",isAuthenticated, resetPassword); // import { resetPassword } from '../controllers/authController.js';
 
