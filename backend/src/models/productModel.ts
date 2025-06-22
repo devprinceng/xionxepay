@@ -10,3 +10,6 @@ const productSchema = new mongoose.Schema(
     timestamps: true, // Automatically manage createdAt and updatedAt fields
   }
 );
+
+const Product = mongoose.model("Product", productSchema);
+export { Product };
