@@ -4,6 +4,7 @@ import { connectDB } from './config/db';
 import cors from 'cors';
 import authRouter from './routes/authRoute';
 import vendorRouter from './routes/vendorRoute';
+import productRouter from './routes/productRoute';
 import cookieParser from 'cookie-parser';
 
 dotenv.config();
@@ -30,13 +31,14 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.urlencoded({ extended: true }));
-
 
 app.use(cookieParser());
+app.use(express.json());
 
 // Use routes
 app.use('/api/auth', authRouter);
 
 app.use('/api/vendor',vendorRouter);
-export default app;
+
+app.use('/api/product', productRouter);
+export default app;
