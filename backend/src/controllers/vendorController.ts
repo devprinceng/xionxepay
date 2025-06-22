@@ -31,7 +31,7 @@ interface UploadedFile {
 const uploadCloudImage = async (file: UploadedFile): Promise<UploadedImageResult> => {
     try {
         const result: CloudinaryUploadResult = await cloudinary.uploader.upload(file.path, {
-            folder: 'contestant_photos', // Specify the folder in Cloudinary
+            folder: 'vendor_logo', // Specify the folder in Cloudinary
             public_id: file.filename, // Use the original filename as public ID
             resource_type: 'image', // Specify the resource type
         });
