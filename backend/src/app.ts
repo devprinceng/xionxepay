@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/db';
 import cors from 'cors';
 import authRouter from './routes/authRoute';
+import vendorRouter from './routes/vendorRoute';
 
 dotenv.config();
 
@@ -31,4 +32,6 @@ app.use(cors({
 
 // Use routes
 app.use('/api/auth', authRouter);
-export default app;
+
+app.use('/api/vendor',vendorRouter);
+export default app;

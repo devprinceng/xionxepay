@@ -15,6 +15,7 @@ const vendorSchema = new mongoose.Schema({
     country: { type: String, required: true }, // Vendor's country
     zip: { type: String, required: true }, // Vendor's zip code
     logo: { type: String, default: null }, // URL to vendor's business logo
+    logoPublicId: { type: String, default: null }, // Public ID for the logo in cloud storage
     isVerified: {
         type: Boolean,
         default: false, // Indicates if the user's email is verified

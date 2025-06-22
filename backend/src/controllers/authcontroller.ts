@@ -44,12 +44,23 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             maxAge: 24 * 60 * 60 * 1000,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         });
+         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 24 * 69 * 60 * 1000); // 24 hours expiration
+
+        // Save OTP and expiration time to the vendor record
+        newVendor.verifyOtp = otp;
+        newVendor.verifyOtpExpiresAt = expiresAt;
+        await newVendor.save();
+
+        // Generate verify email link
+        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&id=${newVendor.email}`;
+        
 
         const mailOptions = {
             from: process.env.EMAIL_FROM,
             to: email,
             subject: `Welcome to , ${process.env.APP_NAME}`,
-            text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nBest regards,\n ${process.env.APP_NAME}`,
+            text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nPlease verify your email by clicking this link ${verifyEmailLink} \n\nBest regards,\n ${process.env.APP_NAME}`,
         };
 
         await transporter.sendMail(mailOptions);
@@ -87,7 +98,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            maxAge: 24 * 60 * 60 * 1000,
+            maxAge: 24 * 60 * 60 * 1000, // 1 day
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         });
         res.status(200).json({ success: true, message: "User logged in successfully", token });
@@ -111,55 +122,63 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-export const sendVerifyOtp = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { vendorID } = req.body;
-        const vendor: any = await Vendor.findById(vendorID);
+// export const sendVerifyOtp = async (req: Request, res: Response): Promise<void> => {
+//     try {
+//         const { vendorID } = req.body;
+//         const vendor: any = await Vendor.findById(vendorID);
 
-        if (!vendor) {
-            res.status(404).json({ success: false, message: "User not found" });
-            return;
-        }
+//         if (!vendor) {
+//             res.status(404).json({ success: false, message: "User not found" });
+//             return;
+//         }
 
-        if (vendor.isAccountVerified) {
-            res.status(400).json({ success: false, message: "Account already verified" });
-            return;
-        }
+//         if (vendor.isAccountVerified) {
+//             res.status(400).json({ success: false, message: "Account already verified" });
+//             return;
+//         }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000;
-        vendor.verifyOtp = otp;
-        vendor.verifyOtpExpiresAt = expiresAt;
-        await vendor.save();
+//         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+//         const expiresAt = Date.now() + 10 * 60 * 1000;
+//         vendor.verifyOtp = otp;
+//         vendor.verifyOtpExpiresAt = expiresAt;
+//         await vendor.save();
 
-        const mailOptions = {
-            from: process.env.EMAIL_FROM,
-            to: vendor.email,
-            subject: `Verify your account`,
-            text: `Your verification OTP is ${otp}. It is valid for 10 minutes.`,
-        };
-        await transporter.sendMail(mailOptions);
-        console.log(`Verification OTP sent to ${vendor.email}`);
-        res.status(200).json({ success: true, message: "Verification OTP sent successfully" });
-    } catch (error) {
-        console.error("Send verify OTP error:", error);
-        res.status(500).json({ success: false, message: "Internal server error" });
-    }
-};
+//         const mailOptions = {
+//             from: process.env.EMAIL_FROM,
+//             to: vendor.email,
+//             subject: `Verify your account`,
+//             text: `Your verification OTP is ${otp}. It is valid for 10 minutes.`,
+//         };
+//         await transporter.sendMail(mailOptions);
+//         console.log(`Verification OTP sent to ${vendor.email}`);
+//         res.status(200).json({ success: true, message: "Verification OTP sent successfully" });
+//     } catch (error) {
+//         console.error("Send verify OTP error:", error);
+//         res.status(500).json({ success: false, message: "Internal server error" });
+//     }
+// };
 
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
-    const { vendorID, otp } = req.body;
-    if (!vendorID || !otp) {
-        res.status(400).json({ success: false, message: "Vendor ID and OTP are required" });
+    const { otp, email } = req.query;
+    if (!otp || !email) {
+        res.status(400).json({ success: false, message: "OTP and email are required" });
+        return;
+    }
+    if (typeof otp !== "string" || typeof email !== "string") {
+        res.status(400).json({ success: false, message: "Invalid OTP or email format" });
+        return;
+    }
+    if (otp.length !== 6) {
+        res.status(400).json({ success: false, message: "OTP must be 6 digits" });
         return;
     }
     try {
-        const vendor: any = await Vendor.findById(vendorID);
+        const vendor: any = await Vendor.findOne({ email });
         if (!vendor) {
             res.status(404).json({ success: false, message: "Vendor not found" });
             return;
         }
-        if (vendor.isAccountVerified) {
+        if (vendor.isVerified) {
             res.status(400).json({ success: false, message: "Account already verified" });
             return;
         }
@@ -171,7 +190,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
             res.status(400).json({ success: false, message: "OTP expired" });
             return;
         }
-        vendor.isAccountVerified = true;
+        vendor.isVerified = true;
         vendor.verifyOtp = null;
         vendor.verifyOtpExpiresAt = 0;
         await vendor.save();
@@ -203,16 +222,18 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         }
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = Date.now() + 10 * 60 * 1000;
+        const expiresAt = Date.now() + 24 * 60 * 60 * 1000; // 24 hours expiration
         vendor.resetOtp = otp;
         vendor.resetOtpExpiresAt = expiresAt;
         await vendor.save();
+// Generate reset link
+  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&id=${vendor.email}`;
 
         const mailOptions = {
             from: process.env.EMAIL_FROM,
             to: vendor.email,
-            subject: `Password reset otp`,
-            text: `Your OTP for resetting your password is ${otp}. It is valid for 10 minutes.`,
+            subject: `Password reset link`,
+            text: `Hello ${vendor.name},\n\nYou requested a password reset. Your password reset link is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nTo reset your password, please click the link below:\n${resetLink}\n\nBest regards,\n${process.env.APP_NAME}`,
         };
         await transporter.sendMail(mailOptions);
 
@@ -223,12 +244,11 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
 };
 
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
-    const { email, otp, newPassword } = req.body;
-
+    const { otp,email, newPassword } = req.body;
     if (!email || !otp || !newPassword) {
         res.status(400).json({
             success: false,
-            message: "Email , OTP and new password are required",
+            message: "OTP, email and new password are required",
         });
         return;
     }
