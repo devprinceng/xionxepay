@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
-    name: { type: String, required: true }, // Product name
-    price: { type: Number, required: true }, // Product price
+    name: { type: String, required: true }, 
+    price: { type: Number, required: true },
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true }, // Reference to the vendor
   },
   {
-    timestamps: true, // Automatically manage createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
