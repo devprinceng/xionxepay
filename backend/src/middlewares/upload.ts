@@ -1,4 +1,6 @@
 import multer from 'multer';
-import  {storage}  from '../config/coudinary';
+import { storage } from '../config/coudinary';
 
 const upload = multer({ storage });
+
+export default upload;
