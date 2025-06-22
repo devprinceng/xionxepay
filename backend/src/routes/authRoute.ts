@@ -21,8 +21,8 @@ authRouter.post("/login", login); // import { login } from '../controllers/authC
 authRouter.post("/logout", logout); // import { logout } from '../controllers/authController.js';
 // authRouter.post("/sendVerifyOtp", isAuthenticated, sendVerifyOtp); // import { sendVerifyOtp } from '../controllers/authController.js';
 authRouter.post("/verify-email", verifyEmail); // import { verifyEmail } from '../controllers/authController.js';
-authRouter.post("/send-reset-otp",isAuthenticated, sendResetOTP); // import { sendResetOTP } from '../controllers/authController.js';
-authRouter.post("/reset-password",isAuthenticated, resetPassword); // import { resetPassword } from '../controllers/authController.js';
+authRouter.post("/send-reset-otp", sendResetOTP); // import { sendResetOTP } from '../controllers/authController.js';
+authRouter.post("/reset-password", resetPassword); // import { resetPassword } from '../controllers/authController.js';
 
 export default authRouter;
 // authRoutes.js

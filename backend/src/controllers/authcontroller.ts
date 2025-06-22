@@ -53,7 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         await newVendor.save();
 
         // Generate verify email link
-        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&id=${newVendor._id}`;
+        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&id=${newVendor.email}`;
         
 
         const mailOptions = {
@@ -159,13 +159,13 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
 // };
 
 export const verifyEmail = async (req: Request, res: Response): Promise<void> => {
-    const { otp, id } = req.query;
-    if (!otp || !id) {
-        res.status(400).json({ success: false, message: "OTP and User ID are required" });
+    const { otp, email } = req.query;
+    if (!otp || !email) {
+        res.status(400).json({ success: false, message: "OTP and email are required" });
         return;
     }
-    if (typeof otp !== "string" || typeof id !== "string") {
-        res.status(400).json({ success: false, message: "Invalid OTP or User ID format" });
+    if (typeof otp !== "string" || typeof email !== "string") {
+        res.status(400).json({ success: false, message: "Invalid OTP or email format" });
         return;
     }
     if (otp.length !== 6) {
@@ -173,7 +173,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
         return;
     }
     try {
-        const vendor: any = await Vendor.findById(id);
+        const vendor: any = await Vendor.findOne({ email });
         if (!vendor) {
             res.status(404).json({ success: false, message: "Vendor not found" });
             return;
@@ -227,7 +227,7 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         vendor.resetOtpExpiresAt = expiresAt;
         await vendor.save();
 // Generate reset link
-  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&id=${vendor._id}`;
+  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&id=${vendor.email}`;
 
         const mailOptions = {
             from: process.env.EMAIL_FROM,
@@ -244,17 +244,17 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
 };
 
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
-    const { otp,id, newPassword } = req.body;
-    if (!id || !otp || !newPassword) {
+    const { otp,email, newPassword } = req.body;
+    if (!email || !otp || !newPassword) {
         res.status(400).json({
             success: false,
-            message: "OTP, UserId and new password are required",
+            message: "OTP, email and new password are required",
         });
         return;
     }
 
     try {
-        const vendor: any = await Vendor.findOne({ id });
+        const vendor: any = await Vendor.findOne({ email });
 
         if (!vendor) {
             res.status(404).json({ success: false, message: "Vendor not found" });
