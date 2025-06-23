@@ -92,8 +92,8 @@ export default function ForgotPasswordPage() {
       await sendResetOTP(email)
       setSent(true)
       setLoading(false)
-      toast.success('OTP sent to your email!')
-      router.push(`/reset-password?email=${encodeURIComponent(email)}`)
+      toast.success('OTP sent! Check your email for the reset link.')
+      // router.push(`/reset-password?email=${encodeURIComponent(email)}`)
     } catch (err: any) {
       setLoading(false)
       toast.error(err?.message || 'Failed to send OTP')
@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
         {step === 1 && (
           <>
             <h2 className="text-3xl font-bold mb-2">Forgot your password?</h2>
-            <p className="text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset code.</p>
+            <p className="text-gray-400 mb-6">Enter your email and we&apos;ll send you a reset link.</p>
             {authError && <div className="text-red-400 text-sm mb-4">{authError}</div>}
             <form className="space-y-4" onSubmit={handleEmailSubmit}>
               <div>
@@ -136,9 +136,14 @@ export default function ForgotPasswordPage() {
                 {errors.email && <div className="text-red-400 text-sm mt-1">{errors.email}</div>}
               </div>
               <Button type="submit" variant="gradient" size="lg" className="w-full mt-2" disabled={loading || sent || authLoading}>
-                {sent ? 'Code Sent!' : loading || authLoading ? 'Sending...' : 'Send Reset Code'}
+                {sent ? 'Link Sent!' : loading || authLoading ? 'Sending...' : 'Send Reset Link'}
               </Button>
             </form>
+            {sent && (
+              <div className="mt-6 text-center text-green-400">
+                Check your email for a password reset link.
+              </div>
+            )}
             <div className="mt-6 text-center">
               <Link href="/signin" className="text-aurora-blue-400 hover:underline text-sm">
                 Back to Login

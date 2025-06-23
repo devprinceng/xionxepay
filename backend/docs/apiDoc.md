@@ -20,7 +20,7 @@ https://<your-backend-domain>/api
 
 Registers a new vendor and sends an OTP to their email for verification.
 
-#### Request Body:
+#### Request Body
 
 ```json
 {
@@ -39,7 +39,7 @@ Registers a new vendor and sends an OTP to their email for verification.
 }
 ```
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -49,13 +49,15 @@ Registers a new vendor and sends an OTP to their email for verification.
 }
 ```
 
+---
+
 ### 2. Login
 
 **`POST /auth/login`**
 
 Logs in a vendor with email and password.
 
-#### Request Body:
+#### Request Body
 
 ```json
 {
@@ -64,7 +66,7 @@ Logs in a vendor with email and password.
 }
 ```
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -74,13 +76,15 @@ Logs in a vendor with email and password.
 }
 ```
 
+---
+
 ### 3. Logout
 
 **`POST /auth/logout`**
 
 Logs out the authenticated vendor.
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -89,13 +93,15 @@ Logs out the authenticated vendor.
 }
 ```
 
+---
+
 ### 4. Verify Email
 
 **`POST /auth/verify-email?otp=<6digit>&email=<user@example.com>`**
 
 Verifies vendor email using OTP.
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -104,13 +110,15 @@ Verifies vendor email using OTP.
 }
 ```
 
+---
+
 ### 5. Send Reset OTP
 
 **`POST /auth/send-reset-otp`**
 
 Sends a password reset OTP to the vendor's email.
 
-#### Request Body:
+#### Request Body
 
 ```json
 {
@@ -118,7 +126,7 @@ Sends a password reset OTP to the vendor's email.
 }
 ```
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -127,13 +135,15 @@ Sends a password reset OTP to the vendor's email.
 }
 ```
 
+---
+
 ### 6. Reset Password
 
 **`POST /auth/reset-password`**
 
 Resets the vendor's password using a valid OTP.
 
-#### Request Body:
+#### Request Body
 
 ```json
 {
@@ -143,7 +153,7 @@ Resets the vendor's password using a valid OTP.
 }
 ```
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -164,7 +174,7 @@ Resets the vendor's password using a valid OTP.
 
 Fetches basic vendor profile info.
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -177,13 +187,15 @@ Fetches basic vendor profile info.
 }
 ```
 
+---
+
 ### 8. Update Vendor Profile
 
 **`PUT /vendor/profile`**
 
 Updates vendor's name and phone number.
 
-#### Request Body:
+#### Request Body
 
 ```json
 {
@@ -192,25 +204,30 @@ Updates vendor's name and phone number.
 }
 ```
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
   "success": true,
   "message": "Profile updated successfully",
   "vendor": {
-    ...updatedFields
+    "_id": "<vendorId>",
+    "name": "John Updated",
+    "phone": "08099999999",
+    ...otherFields
   }
 }
 ```
 
+---
+
 ### 9. Get Business Profile
 
-**`GET /vendor/business`** *(Optional if separated)*
+**`GET /vendor/business`**
 
 Fetches business-related profile info.
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
@@ -230,13 +247,15 @@ Fetches business-related profile info.
 }
 ```
 
+---
+
 ### 10. Update Business Profile
 
 **`PUT /vendor/business`**
 
 Updates vendor business details including Cloudinary logo upload.
 
-#### Form Data Fields:
+#### Form Data Fields (multipart/form-data)
 
 * `businessName`: string
 * `businessDescription`: string
@@ -246,15 +265,16 @@ Updates vendor business details including Cloudinary logo upload.
 * `state`: string
 * `country`: string
 * `zip`: string
-* `logo`: *image file (multipart/form-data)*
+* `logo`: image file
 
-#### Success Response:
+#### Success Response
 
 ```json
 {
   "success": true,
   "message": "Vendor Business details updated successfully",
   "vendor": {
+    "_id": "<vendorId>",
     ...updatedFields
   }
 }
@@ -262,7 +282,7 @@ Updates vendor business details including Cloudinary logo upload.
 
 ---
 
-## Notes:
+## Notes
 
 * All protected routes require a valid JWT token (sent via HttpOnly cookie).
 * Image uploads are handled via Cloudinary.
@@ -275,5 +295,4 @@ Updates vendor business details including Cloudinary logo upload.
 }
 ```
 
-* Use proper form encoding (`multipart/form-data`) for logo upload.
-
+* Use proper form encoding (`multipart/form-data`) for logo uploads.
