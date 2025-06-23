@@ -53,7 +53,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         await newVendor.save();
 
         // Generate verify email link
-        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&id=${newVendor.email}`;
+        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&email=${newVendor.email}`;
         
 
         const mailOptions = {
@@ -175,7 +175,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     try {
         const vendor: any = await Vendor.findOne({ email });
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
         if (vendor.isVerified) {
@@ -217,7 +217,7 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         const vendor: any = await Vendor.findOne({ email });
 
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor does not exist" });
+            res.status(400).json({ success: false, message: "Vendor does not exist" });
             return;
         }
 
@@ -227,7 +227,7 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         vendor.resetOtpExpiresAt = expiresAt;
         await vendor.save();
 // Generate reset link
-  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&id=${vendor.email}`;
+  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&email=${vendor.email}`;
 
         const mailOptions = {
             from: process.env.EMAIL_FROM,
@@ -244,7 +244,8 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
 };
 
 export const resetPassword = async (req: Request, res: Response): Promise<void> => {
-    const { otp,email, newPassword } = req.body;
+    const { otp,email } = req.query;
+    const {newPassword} = req.body;
     if (!email || !otp || !newPassword) {
         res.status(400).json({
             success: false,
@@ -257,7 +258,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
         const vendor: any = await Vendor.findOne({ email });
 
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
 
