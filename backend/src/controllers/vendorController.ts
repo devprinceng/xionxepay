@@ -53,7 +53,7 @@ export const getVendorProfile = async (req: Request, res: Response): Promise<voi
 
         const vendor = await Vendor.findById(vendorId);
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
         const { name, email, phone} = vendor;
@@ -82,7 +82,7 @@ export const getBusinessProfile = async (req: Request, res: Response) :Promise<v
 
         const vendor = await Vendor.findById(vendorId);
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
         const { businessName, businessDescription, category, address, city, state, country, zip, logo, logoPublicId } = vendor;
@@ -130,7 +130,7 @@ export const updateVendorProfile = async (req: Request, res: Response): Promise<
         );
 
         if (!updatedVendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
 
@@ -168,7 +168,7 @@ export const updateVendorBusiness = async (req: Request, res: Response): Promise
         );
 
         if (!updatedVendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
 

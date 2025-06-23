@@ -17,12 +17,12 @@ const productRouter = express.Router();
   productRouter.get("/", isAuthenticated, getProducts);
 
   // Get a specific product by ID for the authenticated vendor
-  productRouter.get("/:productId", isAuthenticated, getProductById);
+  productRouter.get("/single", isAuthenticated, getProductById);
 
   // Update a product by ID for the authenticated vendor
-  productRouter.put("/:productId", isAuthenticated, updateProduct);
+  productRouter.put("/single", isAuthenticated, updateProduct);
 
   // Delete a product by ID for the authenticated vendor
-  productRouter.delete("/:productId", isAuthenticated, deleteProduct);
+  productRouter.delete("/single", isAuthenticated, deleteProduct);
 
 export default productRouter;

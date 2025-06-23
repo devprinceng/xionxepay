@@ -60,8 +60,13 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 }
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
+    const { productId } = req.body;
+    if (!productId) {
+        res.status(400).json({ success: false, message: "Product ID is required" });
+        return;
+    }
     try {
-        const { productId } = req.params;
+        
         const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
 
         if (!vendorId) {
@@ -72,7 +77,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
         const product = await Product.findOne({ _id: productId, vendorId: vendorId });
 
         if (!product) {
-            res.status(404).json({ success: false, message: "Product not found" });
+            res.status(400).json({ success: false, message: "Product not found" });
             return;
         }
 
@@ -84,8 +89,13 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
+     const { productId } = req.body;
+     if (!productId) {
+        res.status(400).json({ success: false, message: "Product ID is required" });
+        return;
+    }
     try {
-        const { productId } = req.params;
+       
         const { name, price } = req.body;
         const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
 
@@ -101,7 +111,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
         );
 
         if (!product) {
-            res.status(404).json({ success: false, message: "Product not found" });
+            res.status(400).json({ success: false, message: "Product not found" });
             return;
         }
 
@@ -112,8 +122,13 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
 }
 
 export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
+    const { productId } = req.body;
+    if (!productId) {
+        res.status(400).json({ success: false, message: "Product ID is required" });
+        return;
+    }
     try {
-        const { productId } = req.params;
+        
         const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
 
         if (!vendorId) {
@@ -124,7 +139,7 @@ export const deleteProduct = async (req: Request, res: Response): Promise<void> 
         const product = await Product.findOneAndDelete({ _id: productId, vendorId: vendorId });
 
         if (!product) {
-            res.status(404).json({ success: false, message: "Product not found" });
+            res.status(400).json({ success: false, message: "Product not found" });
             return;
         }
 

@@ -175,7 +175,7 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
     try {
         const vendor: any = await Vendor.findOne({ email });
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
         if (vendor.isVerified) {
@@ -217,7 +217,7 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         const vendor: any = await Vendor.findOne({ email });
 
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor does not exist" });
+            res.status(400).json({ success: false, message: "Vendor does not exist" });
             return;
         }
 
@@ -258,7 +258,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
         const vendor: any = await Vendor.findOne({ email });
 
         if (!vendor) {
-            res.status(404).json({ success: false, message: "Vendor not found" });
+            res.status(400).json({ success: false, message: "Vendor not found" });
             return;
         }
 

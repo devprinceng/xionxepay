@@ -6,7 +6,8 @@ const transactionSchema = new mongoose.Schema(
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true }, 
     status: { type: String, enum: ["pending", "completed", "failed"], default: "pending" }, 
     description: { type: String, default: "" }, 
-    transactionHash: { type: String, required: true, unique: true }, 
+    transactionHash: { type: String, required: true, unique: true },
+    url:{ type: String, default: "" }, // URL to the transaction details or receipt
   },
   {
     timestamps: true, 
