@@ -24,13 +24,13 @@ const step1Schema = z.object({
 
 const step2Schema = z.object({
   businessName: z.string().min(2, { message: 'Business name is required' }),
-  businessDescription: z.string().min(10, { message: 'Business description is required' }),
+  businessDescription: z.string().min(5, { message: 'Business description is required' }),
   category: z.string().min(2, { message: 'Category is required' }),
   metaAccountEmail: z.string().email({ message: 'Meta account email is invalid' })
 })
 
 const step3Schema = z.object({
-  phone: z.string().min(6, { message: 'Phone is required' }),
+  phone: z.string().min(11, { message: 'Phone is required' }),
   address: z.string().min(2, { message: 'Address is required' }),
   city: z.string().min(2, { message: 'City is required' }),
   state: z.string().min(2, { message: 'State is required' }),
@@ -130,6 +130,7 @@ function RegisterVisual() {
 export default function RegisterPage() {
   const { values, errors, loading, setValue, setErrors, setLoading, reset } = useRegisterForm()
   const [step, setStep] = useState(1)
+  const [registered, setRegistered] = useState(false)
   const router = useRouter()
   const { register, loading: authLoading, error: authError } = useAuth()
 
@@ -204,8 +205,8 @@ export default function RegisterPage() {
         confirm: undefined,
       } as any)
       setLoading(false)
-      toast.success('Registration successful! Please verify your email.')
-      router.push('/verify-email')
+      toast.success('Registration successful! Please check your email to verify your account.')
+      setRegistered(true)
       reset()
       setStep(1)
     } catch (err: any) {
@@ -220,235 +221,244 @@ export default function RegisterPage() {
         <h2 className="text-3xl font-bold mb-2">Create your account</h2>
         <p className="text-gray-400 mb-6">Start accepting Web3 payments in minutes.</p>
         {authError && <div className="text-red-400 text-sm mb-4">{authError}</div>}
-        {step === 1 && (
-          <form className="space-y-4" onSubmit={handleStep1}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1" htmlFor="name">Full Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  autoComplete="name"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.name}
-                  onChange={handleChange}
-                />
-                {errors.name && <div className="text-red-400 text-sm mt-1">{errors.name}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.email}
-                  onChange={handleChange}
-                />
-                {errors.email && <div className="text-red-400 text-sm mt-1">{errors.email}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="password">Password</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.password}
-                  onChange={handleChange}
-                />
-                {errors.password && <div className="text-red-400 text-sm mt-1">{errors.password}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="confirm">Confirm Password</label>
-                <input
-                  id="confirm"
-                  name="confirm"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.confirm}
-                  onChange={handleChange}
-                />
-                {errors.confirm && <div className="text-red-400 text-sm mt-1">{errors.confirm}</div>}
-              </div>
-            </div>
-            <Button type="submit" variant="gradient" size="lg" className="w-full mt-4" disabled={loading || authLoading}>
-              Continue
-            </Button>
-          </form>
-        )}
-        {step === 2 && (
-          <form className="space-y-4" onSubmit={handleStep2}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1" htmlFor="businessName">Business Name</label>
-                <input
-                  id="businessName"
-                  name="businessName"
-                  type="text"
-                  autoComplete="organization"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.businessName}
-                  onChange={handleChange}
-                />
-                {errors.businessName && <div className="text-red-400 text-sm mt-1">{errors.businessName}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="businessDescription">Business Description</label>
-                <textarea
-                  id="businessDescription"
-                  name="businessDescription"
-                  required
-                  rows={2}
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.businessDescription}
-                  onChange={handleChange}
-                />
-                {errors.businessDescription && <div className="text-red-400 text-sm mt-1">{errors.businessDescription}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="category">Category</label>
-                <input
-                  id="category"
-                  name="category"
-                  type="text"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.category}
-                  onChange={handleChange}
-                />
-                {errors.category && <div className="text-red-400 text-sm mt-1">{errors.category}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="metaAccountEmail">Meta Account Email</label>
-                <input
-                  id="metaAccountEmail"
-                  name="metaAccountEmail"
-                  type="email"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.metaAccountEmail}
-                  onChange={handleChange}
-                />
-                {errors.metaAccountEmail && <div className="text-red-400 text-sm mt-1">{errors.metaAccountEmail}</div>}
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <Button type="button" variant="secondary" className="w-1/2" onClick={() => setStep(1)}>
-                Back
-              </Button>
-              <Button type="submit" variant="gradient" size="lg" className="w-1/2" disabled={loading || authLoading}>
-                Continue
-              </Button>
-            </div>
-          </form>
-        )}
-        {step === 3 && (
-          <form className="space-y-4" onSubmit={handleStep3}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm mb-1" htmlFor="phone">Phone</label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  autoComplete="tel"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.phone}
-                  onChange={handleChange}
-                />
-                {errors.phone && <div className="text-red-400 text-sm mt-1">{errors.phone}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="address">Address</label>
-                <input
-                  id="address"
-                  name="address"
-                  type="text"
-                  autoComplete="street-address"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.address}
-                  onChange={handleChange}
-                />
-                {errors.address && <div className="text-red-400 text-sm mt-1">{errors.address}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="city">City</label>
-                <input
-                  id="city"
-                  name="city"
-                  type="text"
-                  autoComplete="address-level2"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.city}
-                  onChange={handleChange}
-                />
-                {errors.city && <div className="text-red-400 text-sm mt-1">{errors.city}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="state">State</label>
-                <input
-                  id="state"
-                  name="state"
-                  type="text"
-                  autoComplete="address-level1"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.state}
-                  onChange={handleChange}
-                />
-                {errors.state && <div className="text-red-400 text-sm mt-1">{errors.state}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="country">Country</label>
-                <input
-                  id="country"
-                  name="country"
-                  type="text"
-                  autoComplete="country"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.country}
-                  onChange={handleChange}
-                />
-                {errors.country && <div className="text-red-400 text-sm mt-1">{errors.country}</div>}
-              </div>
-              <div>
-                <label className="block text-sm mb-1" htmlFor="zip">Zip</label>
-                <input
-                  id="zip"
-                  name="zip"
-                  type="text"
-                  autoComplete="postal-code"
-                  required
-                  className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                  value={values.zip}
-                  onChange={handleChange}
-                />
-                {errors.zip && <div className="text-red-400 text-sm mt-1">{errors.zip}</div>}
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <Button type="button" variant="secondary" className="w-1/2" onClick={() => setStep(2)}>
-                Back
-              </Button>
-              <Button type="submit" variant="gradient" size="lg" className="w-1/2" disabled={loading || authLoading}>
-                {loading || authLoading ? 'Creating Account...' : 'Create Account'}
-              </Button>
-            </div>
-          </form>
+        {registered ? (
+          <div className="text-green-400 text-center text-lg my-12">
+            Registration successful!<br />
+            Please check your email for a verification link to activate your account.
+          </div>
+        ) : (
+          <>
+            {step === 1 && (
+              <form className="space-y-4" onSubmit={handleStep1}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="name">Full Name</label>
+                    <input
+                      id="name"
+                      name="name"
+                      type="text"
+                      autoComplete="name"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.name}
+                      onChange={handleChange}
+                    />
+                    {errors.name && <div className="text-red-400 text-sm mt-1">{errors.name}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="email">Email</label>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.email}
+                      onChange={handleChange}
+                    />
+                    {errors.email && <div className="text-red-400 text-sm mt-1">{errors.email}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="password">Password</label>
+                    <input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.password}
+                      onChange={handleChange}
+                    />
+                    {errors.password && <div className="text-red-400 text-sm mt-1">{errors.password}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="confirm">Confirm Password</label>
+                    <input
+                      id="confirm"
+                      name="confirm"
+                      type="password"
+                      autoComplete="new-password"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.confirm}
+                      onChange={handleChange}
+                    />
+                    {errors.confirm && <div className="text-red-400 text-sm mt-1">{errors.confirm}</div>}
+                  </div>
+                </div>
+                <Button type="submit" variant="gradient" size="lg" className="w-full mt-4" disabled={loading || authLoading}>
+                  Continue
+                </Button>
+              </form>
+            )}
+            {step === 2 && (
+              <form className="space-y-4" onSubmit={handleStep2}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="businessName">Business Name</label>
+                    <input
+                      id="businessName"
+                      name="businessName"
+                      type="text"
+                      autoComplete="organization"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.businessName}
+                      onChange={handleChange}
+                    />
+                    {errors.businessName && <div className="text-red-400 text-sm mt-1">{errors.businessName}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="businessDescription">Business Description</label>
+                    <textarea
+                      id="businessDescription"
+                      name="businessDescription"
+                      required
+                      rows={2}
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.businessDescription}
+                      onChange={handleChange}
+                    />
+                    {errors.businessDescription && <div className="text-red-400 text-sm mt-1">{errors.businessDescription}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="category">Category</label>
+                    <input
+                      id="category"
+                      name="category"
+                      type="text"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.category}
+                      onChange={handleChange}
+                    />
+                    {errors.category && <div className="text-red-400 text-sm mt-1">{errors.category}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="metaAccountEmail">Meta Account Email</label>
+                    <input
+                      id="metaAccountEmail"
+                      name="metaAccountEmail"
+                      type="email"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.metaAccountEmail}
+                      onChange={handleChange}
+                    />
+                    {errors.metaAccountEmail && <div className="text-red-400 text-sm mt-1">{errors.metaAccountEmail}</div>}
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <Button type="button" variant="secondary" className="w-1/2" onClick={() => setStep(1)}>
+                    Back
+                  </Button>
+                  <Button type="submit" variant="gradient" size="lg" className="w-1/2" disabled={loading || authLoading}>
+                    Continue
+                  </Button>
+                </div>
+              </form>
+            )}
+            {step === 3 && (
+              <form className="space-y-4" onSubmit={handleStep3}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="phone">Phone</label>
+                    <input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      autoComplete="tel"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.phone}
+                      onChange={handleChange}
+                    />
+                    {errors.phone && <div className="text-red-400 text-sm mt-1">{errors.phone}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="address">Address</label>
+                    <input
+                      id="address"
+                      name="address"
+                      type="text"
+                      autoComplete="street-address"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.address}
+                      onChange={handleChange}
+                    />
+                    {errors.address && <div className="text-red-400 text-sm mt-1">{errors.address}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="city">City</label>
+                    <input
+                      id="city"
+                      name="city"
+                      type="text"
+                      autoComplete="address-level2"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.city}
+                      onChange={handleChange}
+                    />
+                    {errors.city && <div className="text-red-400 text-sm mt-1">{errors.city}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="state">State</label>
+                    <input
+                      id="state"
+                      name="state"
+                      type="text"
+                      autoComplete="address-level1"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.state}
+                      onChange={handleChange}
+                    />
+                    {errors.state && <div className="text-red-400 text-sm mt-1">{errors.state}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="country">Country</label>
+                    <input
+                      id="country"
+                      name="country"
+                      type="text"
+                      autoComplete="country"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.country}
+                      onChange={handleChange}
+                    />
+                    {errors.country && <div className="text-red-400 text-sm mt-1">{errors.country}</div>}
+                  </div>
+                  <div>
+                    <label className="block text-sm mb-1" htmlFor="zip">Zip</label>
+                    <input
+                      id="zip"
+                      name="zip"
+                      type="text"
+                      autoComplete="postal-code"
+                      required
+                      className="w-full px-4 py-2 rounded-lg bg-transparent border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
+                      value={values.zip}
+                      onChange={handleChange}
+                    />
+                    {errors.zip && <div className="text-red-400 text-sm mt-1">{errors.zip}</div>}
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <Button type="button" variant="secondary" className="w-1/2" onClick={() => setStep(2)}>
+                    Back
+                  </Button>
+                  <Button type="submit" variant="gradient" size="lg" className="w-1/2" disabled={loading || authLoading}>
+                    {loading || authLoading ? 'Creating Account...' : 'Create Account'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </>
         )}
         <div className="mt-6 text-center text-sm text-gray-400">
           Already have an account?{' '}

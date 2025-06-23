@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useState, useCallback } from 'react'
 
+// Base URL for API calls
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+
 // Types for vendor/user (customize as needed)
 export type Vendor = {
   id?: string
@@ -28,7 +31,7 @@ export type AuthContextType = {
   login: (data: { email: string; password: string }) => Promise<any>
   logout: () => Promise<void>
   sendVerifyOtp: (vendorID: string) => Promise<any>
-  verifyEmail: (vendorID: string, otp: string) => Promise<any>
+  verifyEmail: (email: string, otp: string) => Promise<any>
   sendResetOTP: (email: string) => Promise<any>
   resetPassword: (data: { email: string; otp: string; newPassword: string }) => Promise<any>
   setUser: (user: Vendor | null) => void
@@ -43,10 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   // Helper for API calls
-  const api = useCallback(async (url: string, options: RequestInit) => {
+  const api = useCallback(async (endpoint: string, options: RequestInit) => {
     setLoading(true)
     setError(null)
     try {
+      const url = `${API_BASE_URL}${endpoint}`
       const res = await fetch(url, {
         ...options,
         headers: {
@@ -68,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Register
   const register = useCallback(async (data: Partial<Vendor> & { password: string }) => {
-    return api('/api/auth/register', {
+    return api('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -76,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login
   const login = useCallback(async (data: { email: string; password: string }) => {
-    const res = await api('/api/auth/login', {
+    const res = await api('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -86,37 +90,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Logout
   const logout = useCallback(async () => {
-    await api('/api/auth/logout', { method: 'POST' })
+    await api('/auth/logout', { method: 'POST' })
     setUser(null)
   }, [api])
 
   // Send verify OTP
   const sendVerifyOtp = useCallback(async (vendorID: string) => {
-    return api('/api/auth/sendVerifyOtp', {
+    return api('/auth/sendVerifyOtp', {
       method: 'POST',
       body: JSON.stringify({ vendorID }),
     })
   }, [api])
 
-  // Verify email
-  const verifyEmail = useCallback(async (vendorID: string, otp: string) => {
-    return api('/api/auth/verifyEmail', {
+  // Verify email - Updated to match API doc format
+  const verifyEmail = useCallback(async (email: string, otp: string) => {
+    return api(`/auth/verify-email?otp=${otp}&email=${email}`, {
       method: 'POST',
-      body: JSON.stringify({ vendorID, otp }),
     })
   }, [api])
 
-  // Send reset OTP
+  // Send reset OTP - Updated to match API doc
   const sendResetOTP = useCallback(async (email: string) => {
-    return api('/api/auth/sendResetOTP', {
+    return api('/auth/send-reset-otp', {
       method: 'POST',
       body: JSON.stringify({ email }),
     })
   }, [api])
 
-  // Reset password
+  // Reset password - Updated to match API doc
   const resetPassword = useCallback(async (data: { email: string; otp: string; newPassword: string }) => {
-    return api('/api/auth/resetPassword', {
+    return api('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify(data),
     })
