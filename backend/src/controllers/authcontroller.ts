@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt, {SignOptions} from "jsonwebtoken";
 import { Vendor } from "../models/vendorModel";
-import transporter from "../config/nodemailer";
-import dotenv from "dotenv";
-dotenv.config();
+import {sendRegistrationEmail,
+    sendResetPasswordEmail,
+    sendVerificationEmail,} from "../utils/mailer"
+// import dotenv from "dotenv";
+// dotenv.config();
 
 // Secret and options
 const secret: jwt.Secret = process.env.JWT_SECRET || "abcdef1234";
@@ -52,19 +54,22 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         newVendor.verifyOtpExpiresAt = expiresAt;
         await newVendor.save();
 
-        // Generate verify email link
-        const verifyEmailLink = `http://localhost:3000/verify-email?otp=${otp}&email=${newVendor.email}`;
+        // // Generate verify email link
+        const verifyEmailLink = `${process.env.CLIENT_BASE_URL}/verify-email?otp=${otp}&email=${newVendor.email}`;
         
 
-        const mailOptions = {
-            from: process.env.EMAIL_FROM,
-            to: email,
-            subject: `Welcome to , ${process.env.APP_NAME}`,
-            text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nPlease verify your email by clicking this link ${verifyEmailLink} \n\nBest regards,\n ${process.env.APP_NAME}`,
-        };
+        // const mailOptions = {
+        //     from: process.env.EMAIL_FROM,
+        //     to: email,
+        //     subject: `Welcome to , ${process.env.APP_NAME}`,
+        //     text: `Hello ${name},\n\nThank you for registering with us! We're excited to have you on board.\n\nPlease verify your email by clicking this link ${verifyEmailLink} \n\nBest regards,\n ${process.env.APP_NAME}`,
+        // };
 
-        await transporter.sendMail(mailOptions);
-        console.log(`Welcome email sent to ${email}`);
+        // await transporter.sendMail(mailOptions);
+
+        sendRegistrationEmail(email, name, verifyEmailLink);
+
+        // console.log(`Welcome email sent to ${email}`);
         res.status(201).json({ success: true, message: "User registered successfully", token });
     } catch (error) {
         console.error("Registration error:", error);
@@ -90,11 +95,20 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             return;
         }
         if (!vendor.isVerified) {
-            res.status(400).json({ success: false, message: "Please verify your account first" });
+            // If account exists but is not verified, resend verification email
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours expiration
+            vendor.verifyOtp = otp;
+            vendor.verifyOtpExpiresAt = expiresAt;
+            await vendor.save();
+            // Generate verify email link
+            const verifyEmailLink = `${process.env.CLIENT_BASE_URL}/verify-email?otp=${otp}&email=${vendor.email}`;
+            await sendVerificationEmail(vendor.email, vendor.name, verifyEmailLink);
+            res.status(400).json({ success: false, message: `Account is not verified, a new verification email has been sent to ${vendor.email}` });
             return;
         }
         const token = jwt.sign(
-            { id: vendor._id },secret, options);
+            { id: vendor._id }, secret, options);
         res.cookie("token", token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
@@ -227,15 +241,17 @@ export const sendResetOTP = async (req: Request, res: Response): Promise<void> =
         vendor.resetOtpExpiresAt = expiresAt;
         await vendor.save();
 // Generate reset link
-  const resetLink = `http://localhost:3000/reset-password?otp=${otp}&email=${vendor.email}`;
+  const resetLink = `${process.env.CLIENT_BASE_URL}/reset-password?otp=${otp}&email=${vendor.email}`;
 
-        const mailOptions = {
-            from: process.env.EMAIL_FROM,
-            to: vendor.email,
-            subject: `Password reset link`,
-            text: `Hello ${vendor.name},\n\nYou requested a password reset. Your password reset link is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nTo reset your password, please click the link below:\n${resetLink}\n\nBest regards,\n${process.env.APP_NAME}`,
-        };
-        await transporter.sendMail(mailOptions);
+        // const mailOptions = {
+        //     from: process.env.EMAIL_FROM,
+        //     to: vendor.email,
+        //     subject: `Password reset link`,
+        //     text: `Hello ${vendor.name},\n\nYou requested a password reset. Your password reset link is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.\n\nTo reset your password, please click the link below:\n${resetLink}\n\nBest regards,\n${process.env.APP_NAME}`,
+        // };
+        // await transporter.sendMail(mailOptions);
+
+        sendResetPasswordEmail(vendor.email, vendor.name, resetLink);
 
         res.status(200).json({ success: true, message: "Otp sent to your email" });
     } catch (error: any) {

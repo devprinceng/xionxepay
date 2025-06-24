@@ -1,7 +1,7 @@
 import e, { Request, Response } from "express";
 import { Product } from "../models/productModel";
-import dotenv from "dotenv";
-dotenv.config();
+// import dotenv from "dotenv";
+// dotenv.config();
 
 
 
