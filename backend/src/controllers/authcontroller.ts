@@ -201,7 +201,16 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
             return;
         }
         if (Date.now() > vendor.verifyOtpExpiresAt) {
-            res.status(400).json({ success: false, message: "OTP expired" });
+            // If account exists but is not verified, resend verification email
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours expiration
+            vendor.verifyOtp = otp;
+            vendor.verifyOtpExpiresAt = expiresAt;
+            await vendor.save();
+            // Generate verify email link
+            const verifyEmailLink = `${process.env.CLIENT_BASE_URL}/verify-email?otp=${otp}&email=${vendor.email}`;
+            await sendVerificationEmail(vendor.email, vendor.name, verifyEmailLink);
+            res.status(400).json({ success: false, message: `OTP expired, a new verification email has been sent to ${vendor.email}` });
             return;
         }
         vendor.isVerified = true;

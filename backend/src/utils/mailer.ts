@@ -1,14 +1,7 @@
 import transporter from "../config/nodemailer";
 // import dotenv from "dotenv";
 // dotenv.config();
-
-interface EmailTemplateOptions {
-    from: string;
-    to: string;
-    subject: string;
-    text: string;
-    html?: string;
-}
+import { EmailTemplateOptions } from "../interfaces/email.interface";
 
 
 

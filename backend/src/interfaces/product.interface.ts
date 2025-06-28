@@ -24,6 +24,7 @@ export interface IProductDelete {
 }
 export interface IProductGetById {
   productId: Types.ObjectId;
+  vendorId: Types.ObjectId;
 }
 export interface IProductGetAll {
   vendorId: Types.ObjectId;
