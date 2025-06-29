@@ -1,10 +1,9 @@
 import e, { Request, Response } from "express";
 import { cloudinary, storage } from "../config/coudinary";
-import bcrypt from "bcryptjs";
 import jwt, {SignOptions} from "jsonwebtoken";
 import { Vendor } from "../models/vendorModel";
-import dotenv from "dotenv";
-dotenv.config();
+// import dotenv from "dotenv";
+// dotenv.config();
 
 
 // Secret and options
