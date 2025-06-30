@@ -1,13 +1,10 @@
 import React from 'react'
-import { AuthProvider } from '../../contexts/auth-context'
+import { DashboardLayout } from '@/components/layouts/dashboard-layout'
 
 export default function VendorLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
-      <AuthProvider>
-
+    <DashboardLayout>
       {children}
-      </AuthProvider>
-    </div>
+    </DashboardLayout>
   )
-} 
+}

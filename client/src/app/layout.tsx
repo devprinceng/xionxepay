@@ -14,7 +14,11 @@ export const metadata: Metadata = {
   description: 'Smart, Web3-powered Point-of-Sale system that allows vendors to accept stablecoin payments through QR codes — no crypto wallets or blockchain knowledge required.',
   keywords: ['Web3', 'POS', 'Payment', 'QR Code', 'Stablecoin', 'USDC', 'Xion Protocol'],
   authors: [{ name: 'XionxePay Team' }],
-  viewport: 'width=device-width, initial-scale=1',
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
   themeColor: '#3b82f6',
 }
 
