@@ -1,6 +1,7 @@
 "use client"
 
 import { Footer } from "./footer"
+import { FooterNav } from "./footer-nav"
 import { Navigation } from "./navigation"
 import { usePathname } from "next/navigation"
 
@@ -13,14 +14,16 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     '/signin',
     '/verify-email',
   ]
-  const isAuthOrVendor =
+  const isAuthOrVendorOrAdmin =
     authRoutes.some(route => pathname.startsWith(route)) ||
-    pathname.startsWith('/vendor')
+    pathname.startsWith('/vendor') ||
+    pathname.startsWith('/admin')
   return (
     <>
-      {!isAuthOrVendor && <Navigation />}
+      {!isAuthOrVendorOrAdmin && <Navigation />}
       {children}
-      {!isAuthOrVendor && <Footer />}
+      {!isAuthOrVendorOrAdmin && <Footer />}
+      {!isAuthOrVendorOrAdmin && <FooterNav />}
     </>
   )
 }
