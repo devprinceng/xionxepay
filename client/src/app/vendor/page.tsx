@@ -23,7 +23,7 @@ const VendorPage = () => {
         transition={{ duration: 0.6 }}
       >
         <h2 className="text-2xl font-bold text-white mb-2">Welcome back, John!</h2>
-        <p className="text-gray-400">Here's what's happening with your business today.</p>
+        <p className="text-gray-400">Here&apos;s what&apos;s happening with your business today.</p>
       </motion.div>
 
         {/* Stats Grid */}
