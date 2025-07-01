@@ -13,7 +13,8 @@ dotenv.config();
 connectDB();
 
 const allowedOrigins = [
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://xionxepay.vercel.app'
 ];
 
 const app = express();
@@ -38,7 +39,7 @@ app.use(express.json());
 // Use routes
 app.use('/api/auth', authRouter);
 
-app.use('/api/vendor',vendorRouter);
+app.use('/api/vendor', vendorRouter);
 
 app.use('/api/product', productRouter);
 export default app;
