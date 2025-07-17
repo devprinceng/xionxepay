@@ -141,9 +141,9 @@ export const updateVendorProfile = async (req: Request, res: Response): Promise<
 }
 
 export const updateVendorBusiness = async (req: Request, res: Response): Promise<void> => {
-    const {businessName,businessDescription,category,address,city,state,country,zip,logo,logoPublicId } = req.body;
+    const {businessName,businessDescription,category,address,city,state,country,zip} = req.body;
 
-    if (!businessName || !businessDescription || !category || !address || !city || !state || !country || !zip || !logo || !logoPublicId) {
+    if (!businessName || !businessDescription || !category || !address || !city || !state || !country || !zip) {
         res.status(400).json({ success: false, message: "All fields are required" });
         return;
     }
