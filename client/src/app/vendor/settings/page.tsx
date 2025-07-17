@@ -1,16 +1,23 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing } from 'lucide-react'
+import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing, LogOut } from 'lucide-react'
+import { useXion } from '@/contexts/xion-context'
+import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { useVendor } from '@/contexts/vendor-context'
 import Skeleton from '@/components/ui/skeleton'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 const SettingsPage = () => {
-  const [activeTab, setActiveTab] = useState('profile')
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(tabParam || 'profile')
+  const { xionAddress, isConnected, disconnectXion } = useXion()
   const {
     vendorProfile,
     businessProfile,
@@ -36,11 +43,26 @@ const SettingsPage = () => {
     logo: undefined as File | undefined,
   })
 
+  // Define tabs before using them in useEffect
+  const tabs = useMemo(() => [
+    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'business', label: 'Business', icon: Building },
+    { id: 'wallet', label: 'Wallet', icon: Wallet },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+  ], [])
+
   useEffect(() => {
     fetchVendorProfile()
     fetchBusinessProfile()
     // eslint-disable-next-line
   }, [])
+  
+  // Update active tab when URL parameter changes
+  useEffect(() => {
+    if (tabParam && tabs.some(tab => tab.id === tabParam)) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam, tabs])
 
   useEffect(() => {
     if (vendorProfile) {
@@ -96,12 +118,7 @@ const SettingsPage = () => {
     fetchBusinessProfile();
   }
 
-  const tabs = [
-    { id: 'profile', label: 'Profile', icon: User },
-    { id: 'business', label: 'Business', icon: Building },
-    { id: 'wallet', label: 'Wallet', icon: Wallet },
-    { id: 'notifications', label: 'Notifications', icon: Bell },
-  ]
+  // Tabs are now defined earlier in the component
 
   return (
     <div className="space-y-6">
@@ -130,7 +147,10 @@ const SettingsPage = () => {
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    onClick={() => {
+                      setActiveTab(tab.id)
+                      router.push(`/vendor/settings?tab=${tab.id}`)
+                    }}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-left transition-colors ${
                       activeTab === tab.id
                         ? 'bg-aurora-blue-500/20 text-aurora-blue-400 border border-aurora-blue-500/30'
@@ -397,11 +417,31 @@ const SettingsPage = () => {
                         <h2 className="text-xl font-bold text-white mb-6">Wallet Settings</h2>
                         <div className="space-y-6">
                           <div className="p-4 bg-aurora-blue-500/10 border border-aurora-blue-500/20 rounded-lg">
-                            <h3 className="text-aurora-blue-300 font-medium mb-2">Connected Wallet</h3>
-                            <p className="text-gray-400 text-sm">0x1234...5678</p>
-                            <Button variant="outline" size="sm" className="mt-3">
-                              Disconnect Wallet
-                            </Button>
+                            <h3 className="text-aurora-blue-300 font-medium mb-2">Xion Wallet</h3>
+                            {isConnected ? (
+                              <>
+                                <p className="text-gray-400 text-sm mb-1">Connected Address:</p>
+                                <p className="font-mono text-white text-sm bg-gray-800/50 p-2 rounded-md overflow-hidden overflow-ellipsis">
+                                  {xionAddress}
+                                </p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="mt-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
+                                  onClick={() => disconnectXion()}
+                                >
+                                  <LogOut className="w-4 h-4 mr-2" />
+                                  Disconnect Wallet
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-gray-400 text-sm mb-3">Connect your Xion wallet to receive payments and manage your vendor account.</p>
+                                <div className="mt-2">
+                                  <XionConnectButton />
+                                </div>
+                              </>
+                            )}
                           </div>
                           <div>
                             <label className="block text-sm text-gray-400 mb-2">Preferred Stablecoin</label>

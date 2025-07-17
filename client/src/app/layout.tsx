@@ -7,6 +7,8 @@ import { AuthProvider } from '../contexts/auth-context'
 import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { VendorProvider } from '@/contexts/vendor-context'
+import { XionProvider } from '@/contexts/xion-context'
+import { XionAbstraxionProvider } from '@/components/xion/abstraxion-provider'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -50,8 +52,11 @@ export default function RootLayout({
             <Toaster position="top-center" richColors closeButton />
             <AuthProvider>
               <VendorProvider>
-
-            <ProtectedRoute>{children}</ProtectedRoute>
+                <XionAbstraxionProvider>
+                  <XionProvider>
+                    <ProtectedRoute>{children}</ProtectedRoute>
+                  </XionProvider>
+                </XionAbstraxionProvider>
               </VendorProvider>
             </AuthProvider>
           </div>

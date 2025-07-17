@@ -27,12 +27,14 @@ export type BusinessProfile = {
 export type VendorContextType = {
   vendorProfile: VendorProfile | null
   businessProfile: BusinessProfile | null
+  xionWalletAddress: string | null
   loading: boolean
   error: string | null
   fetchVendorProfile: () => Promise<void>
   updateVendorProfile: (data: Partial<VendorProfile>) => Promise<void>
   fetchBusinessProfile: () => Promise<void>
   updateBusinessProfile: (data: { [key: string]: any }) => Promise<void>
+  updateXionWalletAddress: (address: string | null) => void
 }
 
 const VendorContext = createContext<VendorContextType | undefined>(undefined)
@@ -40,6 +42,7 @@ const VendorContext = createContext<VendorContextType | undefined>(undefined)
 export function VendorProvider({ children }: { children: React.ReactNode }) {
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null)
   const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null)
+  const [xionWalletAddress, setXionWalletAddress] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -133,15 +136,22 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
     })
   }, [fetchVendorProfile])
 
+  // Function to update Xion wallet address
+  const updateXionWalletAddress = useCallback((address: string | null) => {
+    setXionWalletAddress(address)
+  }, [])
+
   const value: VendorContextType = {
     vendorProfile,
     businessProfile,
+    xionWalletAddress,
     loading,
     error,
     fetchVendorProfile,
     updateVendorProfile,
     fetchBusinessProfile,
     updateBusinessProfile,
+    updateXionWalletAddress,
   }
 
   return (
