@@ -6,6 +6,7 @@ import React from 'react'
 import { AuthProvider } from '../contexts/auth-context'
 import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { VendorProvider } from '@/contexts/vendor-context'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -48,7 +49,10 @@ export default function RootLayout({
           <div className="relative z-10">
             <Toaster position="top-center" richColors closeButton />
             <AuthProvider>
+              <VendorProvider>
+
             <ProtectedRoute>{children}</ProtectedRoute>
+              </VendorProvider>
             </AuthProvider>
           </div>
         </div>

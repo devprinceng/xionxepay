@@ -164,6 +164,7 @@ Resets the vendor's password using a valid OTP.
 
 ---
 
+
 ## 👤 Vendor Profile Routes
 
 > All endpoints below require authentication via middleware `isAuthenticated`.

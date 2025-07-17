@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   LayoutDashboard,
@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+import { useVendor } from '@/contexts/vendor-context'
+import { useAuth } from '@/contexts/auth-context'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -27,6 +29,14 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+  const { vendorProfile, businessProfile } = useVendor()
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    logout();
+    router.push('/signin');
+  }
 
   const navigation = [
     { name: 'Dashboard', href: '/vendor', icon: LayoutDashboard },
@@ -83,12 +93,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* User Profile */}
           <div className="p-6 border-b border-gray-700/50">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center text-white font-medium">
+                {vendorProfile?.name ? (
+                  vendorProfile.name.charAt(0).toUpperCase()
+                ) : (
+                  <User className="w-5 h-5" />
+                )}
               </div>
               <div>
-                <p className="text-white font-medium">John Doe</p>
-                <p className="text-gray-400 text-sm">Coffee Corner</p>
+                <p className="text-white font-medium">{vendorProfile?.name || 'User'}</p>
+                <p className="text-gray-400 text-sm">{businessProfile?.businessName || 'Vendor'}</p>
               </div>
             </div>
           </div>
@@ -119,7 +133,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Bottom Actions */}
           <div className="p-4 border-t border-gray-700/50 space-y-2">
-            <Button variant="ghost" className="w-full justify-start text-gray-400 hover:text-white">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-gray-400 hover:text-white hover:bg-red-500/10"
+              onClick={handleLogout}
+            >
               <LogOut className="w-4 h-4 mr-3" />
               Logout
             </Button>
@@ -149,8 +167,19 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>
-              <div className="w-8 h-8 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
+              {/* User Profile */}
+              <div className="flex items-center space-x-3">
+                <div className="relative group">
+                  <div className="w-8 h-8 bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 rounded-full flex items-center justify-center text-white font-medium text-sm overflow-hidden">
+                    {vendorProfile?.name ? (
+                      vendorProfile.name.charAt(0).toUpperCase()
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
+                  </div>
+                 
+                </div>
+                
               </div>
             </div>
           </div>

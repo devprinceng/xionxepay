@@ -105,14 +105,14 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col gap-4"
             >
               <Link href="/register">
                 <Button variant="gradient" size="xl" className="glow-effect">
                   Start Accepting Payments
                 </Button>
               </Link>
-              <Link href="/vendor">
+              {/* <Link href="/vendor">
                 <Button variant="outline" size="xl">
                   View Demo Dashboard
                 </Button>
@@ -121,7 +121,7 @@ export function HeroSection() {
                 <Button variant="outline" size="xl" className="border-red-500/30 text-red-400 hover:bg-red-500/20">
                   Admin Panel
                 </Button>
-              </Link>
+              </Link> */}
               
             </motion.div>
 
