@@ -42,6 +42,9 @@ const SettingsPage = () => {
     zip: '',
     logo: undefined as File | undefined,
   })
+  
+  // State for logo preview
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   // Define tabs before using them in useEffect
   const tabs = useMemo(() => [
@@ -99,9 +102,18 @@ const SettingsPage = () => {
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setBusinessForm({ ...businessForm, logo: e.target.files[0] })
+      const file = e.target.files[0]
+      setBusinessForm({ ...businessForm, logo: file })
+      
+      // Create a preview URL for the selected image
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setLogoPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     } else {
       setBusinessForm({ ...businessForm, logo: undefined })
+      setLogoPreview(null)
     }
   }
 
@@ -348,7 +360,13 @@ const SettingsPage = () => {
                             <div className="flex items-center space-x-6">
                               <div className="relative group">
                                 <div className="w-24 h-24 rounded-lg bg-gray-800 border-2 border-dashed border-gray-700 flex items-center justify-center overflow-hidden transition-colors group-hover:border-aurora-blue-500/50">
-                                  {businessProfile?.logo ? (
+                                  {logoPreview ? (
+                                    <img 
+                                      src={logoPreview} 
+                                      alt="Business Logo Preview" 
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : businessProfile?.logo ? (
                                     <img 
                                       src={businessProfile.logo} 
                                       alt="Business Logo" 
@@ -390,7 +408,10 @@ const SettingsPage = () => {
                                 {businessProfile?.logo && (
                                   <button 
                                     type="button"
-                                    onClick={() => setBusinessForm({...businessForm, logo: undefined})}
+                                    onClick={() => {
+                                      setBusinessForm({...businessForm, logo: undefined})
+                                      setLogoPreview(null)
+                                    }}
                                     className="mt-2 text-xs text-red-400 hover:text-red-300 flex items-center"
                                   >
                                     <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

@@ -115,18 +115,45 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
   }, [api])
 
   // Update business profile (with logo upload)
-  const updateBusinessProfile = useCallback(async (profile: { [key: string]: any }) => {
+  const updateBusinessProfile = useCallback(async (profile: Partial<BusinessProfile>) => {
     const formData = new FormData()
     Object.entries(profile).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         formData.append(key, value as any)
       }
     })
-    const data = await api('/vendor/business', {
-      method: 'PUT',
-      body: formData,
-    })
-    setBusinessProfile(data.vendor)
+    
+    setLoading(true)
+    setError(null)
+    try {
+      const url = `${API_BASE_URL}/vendor/business`
+      const res = await fetch(url, {
+        method: 'PUT',
+        body: formData,
+        credentials: 'include',
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          setVendorProfile(null)
+          setBusinessProfile(null)
+          if (!window.location.pathname.startsWith('/signin')) {
+            window.location.href = '/signin?session=expired'
+          }
+        }
+        throw new Error(data.message || 'Something went wrong')
+      }
+      
+      setLoading(false)
+      setBusinessProfile(data.vendor)
+      return data
+    } catch (err: any) {
+      setLoading(false)
+      setError(err.message || 'Failed to update business profile')
+      throw err
+    }
   }, [api])
 
   // On mount, check login status
