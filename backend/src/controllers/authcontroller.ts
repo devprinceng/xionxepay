@@ -46,7 +46,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
             maxAge: 24 * 60 * 60 * 1000,
             sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         });
-         const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 24 * 69 * 60 * 1000); // 24 hours expiration
 
         // Save OTP and expiration time to the vendor record
