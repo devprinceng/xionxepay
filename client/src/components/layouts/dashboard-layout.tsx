@@ -80,6 +80,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'Dashboard', href: '/vendor', icon: LayoutDashboard },
     { name: 'Products', href: '/vendor/products', icon: Package },
     { name: 'QR Generator', href: '/vendor/qr', icon: QrCode },
+    { name: 'Wallet', href: '/vendor/wallet', icon: Wallet },
     { name: 'Transactions', href: '/vendor/transactions', icon: CreditCard },
     { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/vendor/settings', icon: Settings },
@@ -246,7 +247,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                         <Building className="mr-2 h-4 w-4" />
                         <span>Business</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-sm hover:bg-gray-800 cursor-pointer" onClick={() => router.push('/vendor/settings?tab=wallet')}>
+                      <DropdownMenuItem className="text-sm hover:bg-gray-800 cursor-pointer" onClick={() => router.push('/vendor/wallet')}>
                         <Wallet className="mr-2 h-4 w-4" />
                         <span>Wallet: {xionWalletAddress?.slice(0, 6) + '...' + xionWalletAddress?.slice(-4) || 'Not connected'}</span>
                       </DropdownMenuItem>

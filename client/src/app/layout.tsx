@@ -6,9 +6,11 @@ import React from 'react'
 import { AuthProvider } from '../contexts/auth-context'
 import { Toaster } from 'sonner'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { VendorProvider } from '@/contexts/vendor-context'
-import { XionProvider } from '@/contexts/xion-context'
+import PaymentQRProvider from '@/contexts/PaymentQRContext'
 import { XionAbstraxionProvider } from '@/components/xion/abstraxion-provider'
+import { XionProvider } from '@/contexts/xion-context'
+import XionErrorBoundary from '@/components/xion/error-boundary'
+import { ClientConditionalProviders } from '@/components/ClientConditionalProviders'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,6 +26,8 @@ export const viewport = {
   initialScale: 1,
   themeColor: '#3b82f6',
 }
+
+
 
 export default function RootLayout({
   children,
@@ -51,13 +55,17 @@ export default function RootLayout({
           <div className="relative z-10">
             <Toaster position="top-center" richColors closeButton />
             <AuthProvider>
-              <VendorProvider>
+              <XionErrorBoundary>
                 <XionAbstraxionProvider>
                   <XionProvider>
-                    <ProtectedRoute>{children}</ProtectedRoute>
+                    <PaymentQRProvider>
+                      <ClientConditionalProviders>
+                        <ProtectedRoute>{children}</ProtectedRoute>
+                      </ClientConditionalProviders>
+                    </PaymentQRProvider>
                   </XionProvider>
                 </XionAbstraxionProvider>
-              </VendorProvider>
+              </XionErrorBoundary>
             </AuthProvider>
           </div>
         </div>

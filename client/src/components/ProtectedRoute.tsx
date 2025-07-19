@@ -14,16 +14,21 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
     '/signin',
     '/verify-email',
   ]
+  
+  // Public routes that should not have any authentication logic
+  const publicRoutes = ['/pay']
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+  
   const isAuthOrVendorOrAdmin =
     authRoutes.some(route => pathname.startsWith(route)) ||
     pathname.startsWith('/vendor') ||
     pathname.startsWith('/admin')
   return (
     <>
-      {!isAuthOrVendorOrAdmin && <Navigation />}
+      {!(isAuthOrVendorOrAdmin || isPublicRoute) && <Navigation />}
       {children}
-      {!isAuthOrVendorOrAdmin && <Footer />}
-      {!isAuthOrVendorOrAdmin && <FooterNav />}
+      {!(isAuthOrVendorOrAdmin || isPublicRoute) && <Footer />}
+      {!(isAuthOrVendorOrAdmin || isPublicRoute) && <FooterNav />}
     </>
   )
 }

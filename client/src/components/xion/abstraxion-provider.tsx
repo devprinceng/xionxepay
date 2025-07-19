@@ -3,18 +3,13 @@
 import React from 'react'
 import { AbstraxionProvider } from '@burnt-labs/abstraxion'
 
-// Configuration for the Xion network
+// Configuration for Xion network with clean redirect URL
 const XION_CONFIG = {
-//   appName: 'XionxePay',
-//   chainId: 'xion-testnet-1',
-//   chainName: 'Xion Testnet',
-  rpcUrl: "https://rpc.xion-testnet-2.burnt.com/",
-  restUrl: "https://api.xion-testnet-2.burnt.com/",
-  treasury: "xion1l2gp7xpu2f05qmg9egsp4s3xkmyz0z0wgsg3ac6axs56vu0yhvhsulamwx",
-//   nativeDenom: 'uxion',
-//   nativeDecimals: 6,
-//   addressPrefix: 'xion',
-//   gasPrice: '0.025',
+  rpcUrl: "https://rpc.xion-testnet-2.burnt.com",
+  restUrl: "https://api.xion-testnet-2.burnt.com",
+  treasury: "xion1aqe90yrtf2dppuqthjp599v93yf80ryzj042ed0x4lnqmdmmldxssll07k",
+  // Use a clean redirect URL without query parameters to avoid "unsafe redirect" error
+  redirectUrl: typeof window !== 'undefined' ? `${window.location.origin}/auth-success` : 'http://localhost:3000/auth-success'
 }
 
 export function XionAbstraxionProvider({ children }: { children: React.ReactNode }) {
