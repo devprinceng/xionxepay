@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@burnt-labs/abstraxion": "^1.0.0-alpha.65",
+    "@cosmjs/stargate": "^0.34.0"
+  }
+}

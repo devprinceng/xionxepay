@@ -112,11 +112,13 @@ function ResetPasswordPageContent() {
     }
     setLoading(true)
     try {
-      await resetPassword({
+      const payload = {
         email: values.email,
         otp: values.otp,
         newPassword: values.password,
-      })
+      }
+      console.log('Reset password payload:', payload)
+      await resetPassword(payload)
       setLoading(false)
       toast.success('Password reset successful! Please login.')
       router.push('/signin')

@@ -92,6 +92,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' })
     setUser(null)
+    // Clear Xion wallet cookie
+    const Cookies = (await import('js-cookie')).default
+    Cookies.remove('xion_address')
   }, [api])
 
   // Send verify OTP
