@@ -5,7 +5,9 @@ import cors from 'cors';
 import authRouter from './routes/authRoute';
 import vendorRouter from './routes/vendorRoute';
 import productRouter from './routes/productRoute';
+import paymentRouter from './routes/transactionRoute';
 import cookieParser from 'cookie-parser';
+import paymentSessionRouter from './routes/paymentSessionRoute';
 
 dotenv.config();
 
@@ -42,7 +44,7 @@ app.use('/api/vendor',vendorRouter);
 
 app.use('/api/product', productRouter);
 
-app.use('/api/payment', require('./routes/paymentRoute'));
-app.use('/api/payment-sessions', require('./routes/paymentSessionRoute'));
+app.use('/api/payment', paymentRouter);
+app.use('/api/payment-sessions', paymentSessionRouter);
 
 export default app;
