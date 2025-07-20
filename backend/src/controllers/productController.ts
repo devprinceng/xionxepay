@@ -52,7 +52,6 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
         }
 
         const products = await Product.find({ vendorId: vendorId });
-        const { name, price } = products[0] || {};
         res.status(200).json({ success: true, products: products });
     } catch (error) {
         res.status(500).json({ success: false, message: "Unable to fetch products", error: error });
@@ -60,7 +59,7 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 }
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
-    const { productId } = req.body;
+    const { productId } = req.params;
     if (!productId) {
         res.status(400).json({ success: false, message: "Product ID is required" });
         return;
@@ -89,7 +88,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
-     const { productId } = req.body;
+     const { productId } = req.params;
      if (!productId) {
         res.status(400).json({ success: false, message: "Product ID is required" });
         return;
@@ -122,7 +121,7 @@ export const updateProduct = async (req: Request, res: Response): Promise<void> 
 }
 
 export const deleteProduct = async (req: Request, res: Response): Promise<void> => {
-    const { productId } = req.body;
+    const { productId } = req.params;
     if (!productId) {
         res.status(400).json({ success: false, message: "Product ID is required" });
         return;
