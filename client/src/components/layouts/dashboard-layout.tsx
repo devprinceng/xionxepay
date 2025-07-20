@@ -82,7 +82,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: 'QR Generator', href: '/vendor/qr', icon: QrCode },
     { name: 'Wallet', href: '/vendor/wallet', icon: Wallet },
     { name: 'Transactions', href: '/vendor/transactions', icon: CreditCard },
-    { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
+    // { name: 'Analytics', href: '/vendor/analytics', icon: BarChart3 },
     { name: 'Settings', href: '/vendor/settings', icon: Settings },
   ]
 

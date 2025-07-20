@@ -81,13 +81,13 @@ const TransactionsPage = () => {
     
     // Map transactions to CSV rows
     const rows = transactionsToExport.map(tx => [
-      tx.id,
+      tx._id,
       tx.description,
-      tx.customer,
-      tx.amount,
+      tx.customer || 'N/A',
+      tx.formattedAmount || `${tx.amount} XION`,
       tx.status,
-      tx.time,
-      tx.hash
+      tx.time || new Date(tx.transactionTime).toLocaleString(),
+      tx.transactionHash
     ])
     
     // Combine headers and rows
@@ -120,11 +120,11 @@ const TransactionsPage = () => {
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase()
         return (
-          tx.id.toLowerCase().includes(searchLower) ||
+          tx._id.toLowerCase().includes(searchLower) ||
           tx.description.toLowerCase().includes(searchLower) ||
-          tx.customer.toLowerCase().includes(searchLower) ||
-          tx.hash.toLowerCase().includes(searchLower) ||
-          tx.amount.toLowerCase().includes(searchLower)
+          (tx.customer && tx.customer.toLowerCase().includes(searchLower)) ||
+          (tx.transactionHash && tx.transactionHash.toLowerCase().includes(searchLower)) ||
+          tx.amount.toString().toLowerCase().includes(searchLower)
         )
       }
       
@@ -243,7 +243,7 @@ const TransactionsPage = () => {
                 <tbody>
                   {filteredTransactions.map((transaction) => (
                     <tr 
-                      key={transaction.id} 
+                      key={transaction._id} 
                       className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors cursor-pointer" 
                       onClick={() => {
                         setSelectedTransaction(transaction)
@@ -251,16 +251,16 @@ const TransactionsPage = () => {
                       }}
                     >
                       <td className="p-4">
-                        <span className="text-white font-mono text-sm">{transaction.id}</span>
+                        <span className="text-white font-mono text-sm">{transaction._id}</span>
                       </td>
                       <td className="p-4">
                         <span className="text-white">{transaction.description}</span>
                       </td>
                       <td className="p-4">
-                        <span className="text-gray-300">{transaction.customer}</span>
+                        <span className="text-gray-300">{transaction.customer || 'N/A'}</span>
                       </td>
                       <td className="p-4">
-                        <span className="text-aurora-blue-400 font-bold">{transaction.amount}</span>
+                        <span className="text-aurora-blue-400 font-bold">{transaction.formattedAmount || `${transaction.amount} XION`}</span>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center space-x-2">
@@ -271,10 +271,10 @@ const TransactionsPage = () => {
                         </div>
                       </td>
                       <td className="p-4">
-                        <span className="text-gray-400 text-sm">{transaction.time}</span>
+                        <span className="text-gray-400 text-sm">{transaction.time || new Date(transaction.transactionTime).toLocaleString()}</span>
                       </td>
                       <td className="p-4">
-                        <span className="text-gray-400 font-mono text-sm truncate max-w-[120px] inline-block">{transaction.hash}</span>
+                        <span className="text-gray-400 font-mono text-sm truncate max-w-[120px] inline-block">{transaction.transactionHash}</span>
                       </td>
                     </tr>
                   ))}
@@ -299,7 +299,7 @@ const TransactionsPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">Transaction ID</p>
-                  <p className="text-white font-mono break-all">{selectedTransaction.id}</p>
+                  <p className="text-white font-mono break-all">{selectedTransaction._id}</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -314,17 +314,17 @@ const TransactionsPage = () => {
                 
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">Amount</p>
-                  <p className="text-aurora-blue-400 font-bold text-xl">{selectedTransaction.amount}</p>
+                  <p className="text-aurora-blue-400 font-bold text-xl">{selectedTransaction.formattedAmount || `${selectedTransaction.amount} XION`}</p>
                 </div>
                 
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">Time</p>
-                  <p className="text-white">{selectedTransaction.time}</p>
+                  <p className="text-white">{selectedTransaction.time || new Date(selectedTransaction.transactionTime).toLocaleString()}</p>
                 </div>
                 
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">Customer</p>
-                  <p className="text-white">{selectedTransaction.customer}</p>
+                  <p className="text-white">{selectedTransaction.customer || 'N/A'}</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -336,17 +336,17 @@ const TransactionsPage = () => {
               <div className="space-y-2 pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-400">Transaction Hash</p>
                 <div className="bg-gray-800 p-3 rounded-md">
-                  <p className="text-gray-300 font-mono text-sm break-all">{selectedTransaction.hash}</p>
+                  <p className="text-gray-300 font-mono text-sm break-all">{selectedTransaction.transactionHash}</p>
                 </div>
               </div>
               
-              {selectedTransaction.hash && (
+              {selectedTransaction.transactionHash && (
                 <div className="flex justify-center pt-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     className="flex items-center gap-2"
-                    onClick={() => window.open(`https://explorer.xion.app/tx/${selectedTransaction.hash}`, '_blank')}
+                    onClick={() => window.open(`https://explorer.xion.app/tx/${selectedTransaction.transactionHash}`, '_blank')}
                   >
                     <ExternalLink className="w-4 h-4" />
                     View on Xion Explorer
