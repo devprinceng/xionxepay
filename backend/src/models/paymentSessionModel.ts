@@ -24,14 +24,12 @@ const paymentSessionSchema = new mongoose.Schema({
     enum: ["pending", "completed", "failed", "expired"],
     default: "pending",
   },
-  transactionId: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" },
+  transactionId: { type: String, unique: true,}, 
   txHash: { type: String, unique: true },
   createdAt: { type: Date, default: Date.now },
   expiresAt: Date,
 });
 
-paymentSessionSchema.index({ sessionId: 1 }, { unique: true }); // Ensure sessionId is unique
-paymentSessionSchema.index({ vendorId: 1, productId: 1, status: 1 }); // Index for efficient querying
 paymentSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 }); // Automatically delete expired sessions after 24 hours
 paymentSessionSchema.pre<PaymentSession>("save", function (next) {
   if (!this.expiresAt) {

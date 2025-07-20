@@ -11,8 +11,8 @@ import { isAuthenticated } from "../middlewares/isAuthenticated";
 
 const paymentSessionRouter = express.Router();
 
-// Public: start a payment session
-paymentSessionRouter.post("/", startPaymentSession);
+// Authenticated Vendor: start a payment session
+paymentSessionRouter.post("/", isAuthenticated, startPaymentSession);
 
 // Public: get session status (e.g., polling from frontend)
 paymentSessionRouter.get("/status/:sessionId", getPaymentStatus);

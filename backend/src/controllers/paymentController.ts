@@ -26,9 +26,8 @@ export const createTransaction = async (req: any, res: any): Promise<void> => {
             amount,
             vendorId,
             productId,
-            description: description,
-            transactionId: transactionId,
-            transactionHash: "", // Example transaction hash, replace with actual hash if available
+            description,
+            transactionId,
             
         });
 

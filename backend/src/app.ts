@@ -45,6 +45,7 @@ app.use('/api/vendor',vendorRouter);
 app.use('/api/product', productRouter);
 
 app.use('/api/payment', paymentRouter);
+
 app.use('/api/payment-sessions', paymentSessionRouter);
 
 export default app;

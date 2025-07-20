@@ -2,18 +2,18 @@ import { Request, Response } from 'express';
 import { PaymentSession } from '../models/paymentSessionModel';
 import { paymentSuccessEmail } from '../utils/mailer'; 
 import { Vendor } from '../models/vendorModel';
+// import { tryCatch } from 'bullmq';
 // import { paymentQueue } from '../queues/paymentQueue';
 
 export const startPaymentSession = async (req: Request, res: Response) => {
   const {transactionId, productId, expectedAmount, sessionId, memo} = req.body;
   const vendorId = req.user?._id;
 
-  if (!transactionId||!vendorId || !productId || !expectedAmount || !sessionId || !memo) {
+  if (!transactionId || !productId || !expectedAmount || !sessionId || !memo) {
     res.status(400).json({ success: false, message: 'Missing required fields' });
     return;
   }
-  
-
+ try {
   await PaymentSession.create({ sessionId, vendorId, productId, expectedAmount, memo, transactionId});
   // await paymentQueue.add('poll-xion', { sessionId, address, expectedAmount, expiresAt,memo }, {
   //   attempts: 3,
@@ -22,64 +22,94 @@ export const startPaymentSession = async (req: Request, res: Response) => {
 
   res.status(200).json({ sessionId, message: 'Payment session started' });
   return;
+ } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        res.status(500).json({ success: false, message: "Unable to create session", error: errorMessage });
+    }
 };
 
 export const getPaymentStatus = async (req: Request, res: Response) => {
   const { sessionId } = req.params;
-  const session = await PaymentSession.findOne({ sessionId });
-  if (!session) {
-    res.status(404).json({ success: false, message: 'Session not found' });
+  try{
+    const session = await PaymentSession.findOne({ sessionId }).populate('productId', 'name price');
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Session not found' });
+      return;
+    }
+    res.status(200).json({ success: true, session });
+    return;
+  }catch(error){
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: 'Unable to fetch session', error: errorMessage });
     return;
   }
-  res.status(200).json({ success: true, session });
-  return;
-};
+}
 
 export const updatePaymentSession = async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   const { email} = req.body;
 
-  const exist = await PaymentSession.findOne({ customerEmail: email });
-  if (exist) {
-    res.status(400).json({ success: false, message: 'You already have a pending payment session', session: exist });
+  if (!email) {
+    res.status(400).json({ success: false, message: 'Email is required' });
     return;
   }
-
-  const session = await PaymentSession.findOneAndUpdate(
-    { sessionId },
-    { customerEmail: email },
-    { new: true }
-  );
-
-  if (!session) { res.status(404).json({ success: false, message: 'Session not found' }); return; }
-
-  res.status(200).json({ success: true, session });
-  return;
+  try {
+    const session = await PaymentSession.findOneAndUpdate({ sessionId }, { customerEmail: email }, { new: true });
+    if (!session) {
+      res.status(404).json({ success: false, message: 'Session not found' });
+      return;
+    }
+    res.status(200).json({ success: true, session });
+    return;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: 'Unable to update session', error: errorMessage });
+    return;
+  }
 }
 
 // 
 
 export const completePaymentSession = async (req: Request, res: Response) => {
   const { sessionId,transactionHash } = req.body;
-  const session = await PaymentSession.findOneAndUpdate(
+  if (!sessionId || !transactionHash) {
+    res.status(400).json({ success: false, message: 'Session ID and transaction hash are required' });
+    return;
+  }
+  try {
+     const newSession = await PaymentSession.findOneAndUpdate(
     { sessionId },
     { status: 'completed', txHash: transactionHash },
     { new: true }
   );
 
+  if (!newSession) {
+    res.status(404).json({ success: false, message: 'Session not found' });
+    return;
+  }
+  const session = await PaymentSession.findOne({ sessionId });
   if (!session) {
     res.status(404).json({ success: false, message: 'Session not found' });
     return;
   }
   const vendor = await Vendor.findById(session.vendorId);
-  if (vendor) {
+  if (!vendor) {
+    res.status(404).json({ success: false, message: 'Vendor not found' });
+    return;
+  }
+  const vendorEmail = vendor.email;
+  if (!vendorEmail) {
+    res.status(404).json({ success: false, message: 'Vendor not found' });
+    return;
+  }
+  
   await paymentSuccessEmail(
-              session.customerEmail || '',
+              vendorEmail || '',
               session.expectedAmount || '',
               session.txHash || '',
               sessionId
             );
-          }
+          
           
   // sessionId:{ type: string; unique: true };
   //   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true };
@@ -102,24 +132,46 @@ export const completePaymentSession = async (req: Request, res: Response) => {
             );
   res.status(200).json({ success: true, session });
   return;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: 'Unable to complete session', error: errorMessage });
+    return;
+  }
 };
 
 export const getActivePaymentSessions = async (req: Request, res: Response) => {
   const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-  const sessions = await PaymentSession.find({ vendorId, status: 'pending' });
+  try {
+    const sessions = await PaymentSession.find({ vendorId, status: 'pending' }).populate('productId', 'name price');
   if (!sessions || sessions.length === 0) {
     res.status(404).json({ success: false, message: 'No active payment sessions found' });
     return;
   }
-  // Populate productId with name and price
-  const populatedSessions = await PaymentSession.populate(sessions, { path: 'productId', select: 'name price' });
-  res.status(200).json({ success: true, sessions: populatedSessions });
+
+  res.status(200).json({ success: true, sessions: sessions });
   return;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: 'Unable to fetch active sessions', error: errorMessage });
+    return;
+    
+  }
 };
 //Payment Session within 24 hours
 export const getAllPaymentSessions = async (req: Request, res: Response) => {
   const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-  const sessions = await PaymentSession.find({ vendorId }).populate('productId', 'name price');
-  res.status(200).json({ success: true, sessions });
-  return;
+  try {
+    const sessions = await PaymentSession.find({ vendorId }).populate('productId', 'name price');
+    if (!sessions || sessions.length === 0) {
+      res.status(404).json({ success: false, message: 'No payment sessions found' });
+      return;
+    }
+
+    res.status(200).json({ success: true, sessions });
+    return;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    res.status(500).json({ success: false, message: 'Unable to fetch payment sessions', error: errorMessage });
+    return;
+  }
 };
