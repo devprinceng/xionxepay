@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress'
 import { coins } from '@cosmjs/proto-signing'
 import { paymentAPI, transactionsAPI } from '@/lib/payment-api'
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const params = useParams()
   const { xionAddress, isConnected } = useXion()
   
@@ -386,5 +386,22 @@ export default function PaymentPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="container max-w-md mx-auto py-8 px-4">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-aurora-blue-400" />
+            <span className="ml-2">Loading payment page...</span>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   )
 }

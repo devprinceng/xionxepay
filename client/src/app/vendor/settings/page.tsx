@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, Suspense } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing, LogOut } from 'lucide-react'
+import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing, LogOut, Loader2 } from 'lucide-react'
 import { useXion } from '@/contexts/xion-context'
 import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { motion } from 'framer-motion'
@@ -12,7 +12,7 @@ import { useVendor } from '@/contexts/vendor-context'
 import Skeleton from '@/components/ui/skeleton'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-const SettingsPage = () => {
+const SettingsPageContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tabParam = searchParams.get('tab')
@@ -465,4 +465,36 @@ const SettingsPage = () => {
   )
 }
 
-export default SettingsPage
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton width="200px" height={32} />
+          <Skeleton width="300px" height={20} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-1">
+            <Card className="p-4">
+              <div className="space-y-2">
+                <Skeleton width="100%" height={40} />
+                <Skeleton width="100%" height={40} />
+                <Skeleton width="100%" height={40} />
+              </div>
+            </Card>
+          </div>
+          <div className="lg:col-span-3">
+            <Card className="p-6">
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-aurora-blue-400" />
+                <span className="ml-2">Loading settings...</span>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    }>
+      <SettingsPageContent />
+    </Suspense>
+  )
+}
