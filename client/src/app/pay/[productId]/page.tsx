@@ -18,40 +18,40 @@ export default function PaymentPage() {
   const params = useParams()
   const { xionAddress, isConnected } = useXion()
   
-  // Get payment ID from URL (this is now the txId)
-  const paymentId = params.productId as string
+  // Get transaction ID from URL
+  const transactionId = params.productId as string
   
-  // Load payment data from localStorage
-  const [paymentData, setPaymentData] = useState<any>(null)
+  // Load transaction data
+  const [transactionData, setTransactionData] = useState<any>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
   
   useEffect(() => {
-    // Load payment data from JSON server using the payment ID
-    const fetchPaymentData = async () => {
+    // Load transaction data from the new API
+    const fetchTransactionData = async () => {
       try {
-        const data = await paymentAPI.getPayment(paymentId)
-        if (data) {
-          setPaymentData(data)
+        const transaction = await paymentAPI.getTransaction(transactionId)
+        if (transaction) {
+          setTransactionData(transaction)
         } else {
-          toast.error('Payment data not found')
+          toast.error('Transaction not found')
         }
       } catch (error) {
-        console.error('Error fetching payment data:', error)
-        toast.error('Failed to load payment data')
+        console.error('Error fetching transaction data:', error)
+        toast.error('Failed to load transaction data')
       } finally {
         setDataLoaded(true)
       }
     }
     
-    fetchPaymentData()
-  }, [paymentId])
+    fetchTransactionData()
+  }, [transactionId])
   
   // Extract payment details from loaded data
-  const productId = paymentData?.productId || paymentId
-  const amount = paymentData?.amount || '0'
-  const description = paymentData?.description || 'Payment'
-  const recipient = paymentData?.recipient || ''
-  const txId = paymentData?.txId || paymentId
+  const productId = transactionData?.productId || transactionId
+  const amount = transactionData?.amount?.toString() || '0'
+  const description = transactionData?.description || 'Payment'
+  const recipient = '' // Recipient will be determined by the vendor's wallet
+  const txId = transactionData?.transactionId || transactionId
   
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'expired'>('pending')
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
@@ -169,59 +169,12 @@ export default function PaymentPage() {
       setTransactionHash(transactionHash)
       setPaymentStatus('completed')
       
-      // Store comprehensive transaction details for vendor transactions page
-      const transaction = {
-        // Basic transaction info
-        id: txId || `TXN${Date.now()}`, // Use provided txId or generate one
-        hash: transactionHash,
-        amount: `${amount} XION`, // Format amount with currency
-        amountRaw: amount, // Keep raw amount for calculations
-        description: description || 'Payment via XionXEPay',
-        
-        // Blockchain details
-        sender: walletAddress,
-        recipient: recipient,
-        network: 'xion-testnet-2',
-        
-        // Customer info (truncated wallet for privacy)
-        customer: `${walletAddress.substring(0, 6)}...${walletAddress.substring(walletAddress.length - 4)}`,
-        customerWallet: walletAddress,
-        
-        // Status and timing
-        status: 'completed',
-        timestamp: new Date().toISOString(),
-        time: new Date().toLocaleString(),
-        
-        // Product details
-        productId: productId,
-        
-        // Payment method
-        paymentMethod: 'xion_wallet',
-        gasless: true,
-        
-        // Additional metadata
-        source: 'qr_payment',
-        platform: 'xionxepay'
-      }
-      
-      // Save transaction to JSON server for vendor reporting
+      // Update the transaction status using the new API
       try {
-        await transactionsAPI.createTransaction(transaction)
+        await paymentAPI.updateTransaction(txId, 'completed', transactionHash)
       } catch (error) {
-        console.error('Failed to save transaction to server:', error)
-        // Still save to localStorage as fallback
-        const transactionHistory = JSON.parse(localStorage.getItem('transactionHistory') || '[]')
-        localStorage.setItem('transactionHistory', JSON.stringify([transaction, ...transactionHistory]))
-        
-        const vendorTransactions = JSON.parse(localStorage.getItem('vendorTransactions') || '[]')
-        localStorage.setItem('vendorTransactions', JSON.stringify([transaction, ...vendorTransactions]))
-      }
-      
-      // Update payment status in JSON server
-      try {
-        await paymentAPI.updatePaymentStatus(paymentId, 'completed', transactionHash)
-      } catch (error) {
-        console.error('Failed to update payment status in server:', error)
+        console.error('Failed to update transaction status:', error)
+        // Continue anyway as the blockchain transaction was successful
       }
       
       toast.success('Payment completed successfully!')
@@ -251,8 +204,8 @@ export default function PaymentPage() {
     )
   }
   
-  // Show error state if payment data not found
-  if (!paymentData) {
+  // Show error state if transaction data not found
+  if (!transactionData) {
     return (
       <div className="container max-w-md mx-auto py-8 px-4">
         <Card>
@@ -326,12 +279,13 @@ export default function PaymentPage() {
               </div>
             )}
             
+            <div className=''>
             {paymentStatus === 'completed' && (
-              <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-md flex items-center space-x-2 text-green-600 dark:text-green-400">
-                <CheckCircle className="w-5 h-5" />
-                <div>
+              <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-md flex items-start space-x-2 text-green-600 dark:text-green-400">
+                <CheckCircle className="w-5 h-5 flex-shrink-0" />
+                <div className='flex flex-col w-full'>
                   <p className="font-medium">Payment Successful</p>
-                  <p className="text-xs mt-1">Transaction ID: {transactionHash}</p>
+                  <p className="text-xs mt-1 break-all">Transaction ID: {transactionHash}</p>
                 </div>
               </div>
             )}
@@ -359,6 +313,7 @@ export default function PaymentPage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         </CardContent>
         <CardFooter className="flex flex-col space-y-4">

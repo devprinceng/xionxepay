@@ -1,10 +1,52 @@
-// API service for payment data management using JSON server
+// API service for payment data management
 
-// Force use of local JSON server for development
-const API_BASE_URL = 'http://localhost:3001'
-// For production, you can uncomment the line below:
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001'
+// Base URL for API endpoints
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
+const PAYMENT_API_URL = `${API_BASE_URL}/payment`
+const PAYMENT_SESSION_API_URL = `${API_BASE_URL}/payment-session`
 
+// API Response interfaces
+interface ApiResponse<T> {
+  success: boolean
+  message?: string
+  error?: string
+  [key: string]: any
+}
+
+// Transaction model based on API docs
+export interface Transaction {
+  _id: string
+  amount: number
+  vendorId: string
+  productId: string | { name: string, price: number }
+  description: string
+  transactionId: string
+  transactionHash: string
+  transactionTime: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'expired'
+  customer?: string
+  customerEmail?: string
+  // Additional fields for UI display
+  time?: string
+  formattedAmount?: string
+}
+
+// Payment Session model based on API docs
+export interface PaymentSession {
+  _id: string
+  sessionId: string
+  transactionId: string
+  productId: string
+  expectedAmount: string
+  memo: string
+  email?: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'expired'
+  transactionHash?: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Legacy interfaces for backward compatibility
 export interface PaymentData {
   id: string
   txId: string
@@ -33,106 +75,195 @@ export interface PaymentLink {
   transactionHash?: string
 }
 
-export interface Transaction {
-  id: string
-  hash: string
-  amount: string
-  amountRaw: string
-  description: string
-  sender: string
-  recipient: string
-  network: string
-  customer: string
-  customerWallet: string
-  status: string
-  timestamp: string
-  time: string
-  productId: string
-  paymentMethod: string
-  gasless: boolean
-  source: string
-  platform: string
-}
-
-// Payment Data API
+// Payment API
 export const paymentAPI = {
-  // Create a new payment
-  async createPayment(paymentData: Omit<PaymentData, 'id'>): Promise<PaymentData> {
-    const response = await fetch(`${API_BASE_URL}/payments`, {
+  // Create a new transaction
+  async createTransaction(transactionData: { amount: number, productId: string, description: string }): Promise<Transaction> {
+    const response = await fetch(PAYMENT_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        id: paymentData.txId,
-        ...paymentData,
-      }),
+      body: JSON.stringify(transactionData),
+      credentials: 'include' // Include auth cookies
     })
     
-    if (!response.ok) {
-      throw new Error('Failed to create payment')
+    const data: ApiResponse<{ transaction: Transaction }> = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to create transaction')
     }
     
-    return response.json()
+    return data.transaction
   },
 
-  // Get payment by ID
-  async getPayment(paymentId: string): Promise<PaymentData | null> {
+  // Get a single transaction by ID
+  async getTransaction(transactionId: string): Promise<Transaction | null> {
     try {
-      const response = await fetch(`${API_BASE_URL}/payments/${paymentId}`)
+      const response = await fetch(`${PAYMENT_API_URL}/${transactionId}`, {
+        credentials: 'include' // Include auth cookies
+      })
       
-      if (!response.ok) {
+      const data: ApiResponse<{ transaction: Transaction }> = await response.json()
+      
+      if (!data.success) {
         if (response.status === 404) {
           return null
         }
-        throw new Error('Failed to fetch payment')
+        throw new Error(data.message || 'Failed to fetch transaction')
       }
       
-      return response.json()
+      return data.transaction
     } catch (error) {
-      console.error('Error fetching payment:', error)
+      console.error('Error fetching transaction:', error)
       return null
     }
   },
 
-  // Update payment status
-  async updatePaymentStatus(
-    paymentId: string, 
-    status: PaymentData['status'], 
-    transactionHash?: string
-  ): Promise<PaymentData> {
-    const response = await fetch(`${API_BASE_URL}/payments/${paymentId}`, {
-      method: 'PATCH',
+  // Get all transactions for vendor
+  async getAllTransactions(): Promise<Transaction[]> {
+    const response = await fetch(PAYMENT_API_URL, {
+      credentials: 'include' // Include auth cookies
+    })
+    
+    const data: ApiResponse<{ transactions: Transaction[] }> = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch transactions')
+    }
+    
+    return data.transactions.map((tx: { transactionTime: string | number | Date; amount: any }) => ({
+      ...tx,
+      // Format for UI display
+      time: new Date(tx.transactionTime).toLocaleString(),
+      formattedAmount: `${tx.amount} XION`
+    }))
+  },
+
+  // Update transaction (system only, typically not called from frontend)
+  async updateTransaction(
+    transactionId: string, 
+    status: Transaction['status'], 
+    transactionHash: string
+  ): Promise<Transaction> {
+    const response = await fetch(PAYMENT_API_URL, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
+        transactionId,
         status,
-        transactionHash,
-        updatedAt: new Date().toISOString(),
-      }),
+        transactionHash
+      })
     })
     
-    if (!response.ok) {
-      throw new Error('Failed to update payment status')
+    const data: ApiResponse<{ transaction: Transaction }> = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to update transaction')
     }
     
-    return response.json()
-  },
-
-  // Get all payments
-  async getAllPayments(): Promise<PaymentData[]> {
-    const response = await fetch(`${API_BASE_URL}/payments`)
-    
-    if (!response.ok) {
-      throw new Error('Failed to fetch payments')
-    }
-    
-    return response.json()
+    return data.transaction
   },
 }
 
-// Payment Links API
+// Payment Session API
+export const paymentSessionAPI = {
+  // Start a new payment session
+  async startPaymentSession(sessionData: {
+    transactionId: string,
+    productId: string,
+    expectedAmount: string,
+    sessionId: string,
+    memo: string
+  }): Promise<PaymentSession> {
+    const response = await fetch(PAYMENT_SESSION_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(sessionData),
+      credentials: 'include' // Include auth cookies
+    })
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to start payment session')
+    }
+    
+    return data.session
+  },
+
+  // Get payment session status
+  async getSessionStatus(sessionId: string): Promise<PaymentSession> {
+    const response = await fetch(`${PAYMENT_SESSION_API_URL}/status/${sessionId}`)
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to get session status')
+    }
+    
+    return data.session
+  },
+
+  // Update payment session with customer email
+  async updateSession(sessionId: string, email: string): Promise<PaymentSession> {
+    const response = await fetch(`${PAYMENT_SESSION_API_URL}/${sessionId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email })
+    })
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to update session')
+    }
+    
+    return data.session
+  },
+
+  // Complete payment session
+  async completeSession(sessionId: string, transactionHash: string): Promise<PaymentSession> {
+    const response = await fetch(`${PAYMENT_SESSION_API_URL}/complete`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ sessionId, transactionHash })
+    })
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to complete session')
+    }
+    
+    return data.session
+  },
+
+  // Get all active sessions for vendor
+  async getActiveSessions(): Promise<PaymentSession[]> {
+    const response = await fetch(`${PAYMENT_SESSION_API_URL}/active`, {
+      credentials: 'include' // Include auth cookies
+    })
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to get active sessions')
+    }
+    
+    return data.sessions
+  },
+}
+
+// Legacy Payment Links API for backward compatibility
 export const paymentLinksAPI = {
   // Create a new payment link
   async createPaymentLink(paymentLink: Omit<PaymentLink, 'id'>): Promise<PaymentLink> {
