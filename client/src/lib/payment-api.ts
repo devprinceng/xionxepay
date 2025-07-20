@@ -3,7 +3,7 @@
 // Base URL for API endpoints
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
 const PAYMENT_API_URL = `${API_BASE_URL}/payment`
-const PAYMENT_SESSION_API_URL = `${API_BASE_URL}/payment-session`
+const PAYMENT_SESSION_API_URL = `${API_BASE_URL}/payment-sessions`
 
 // API Response interfaces
 interface ApiResponse<T> {
@@ -88,47 +88,65 @@ export const paymentAPI = {
       credentials: 'include' // Include auth cookies
     })
     
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('API Error:', response.status, errorText)
+      throw new Error(`Failed to create transaction: ${response.status} ${response.statusText}`)
+    }
+    
     const data: ApiResponse<{ transaction: Transaction }> = await response.json()
     
-    if (!data.success) {
+    // Handle API response format as documented
+    if (data.success === false) {
       throw new Error(data.message || 'Failed to create transaction')
     }
     
+    // Return the transaction from the documented response format
     return data.transaction
   },
 
   // Get a single transaction by ID
   async getTransaction(transactionId: string): Promise<Transaction | null> {
-    try {
-      const response = await fetch(`${PAYMENT_API_URL}/${transactionId}`, {
-        credentials: 'include' // Include auth cookies
-      })
-      
-      const data: ApiResponse<{ transaction: Transaction }> = await response.json()
-      
-      if (!data.success) {
-        if (response.status === 404) {
-          return null
-        }
-        throw new Error(data.message || 'Failed to fetch transaction')
-      }
-      
-      return data.transaction
-    } catch (error) {
-      console.error('Error fetching transaction:', error)
+    const response = await fetch(`${PAYMENT_API_URL}/${transactionId}`, {
+      method: 'GET',
+      credentials: 'include'
+    })
+    
+    if (response.status === 404) {
       return null
     }
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Get Transaction API Error:', response.status, errorText)
+      throw new Error(`Failed to fetch transaction: ${response.status} ${response.statusText}`)
+    }
+    
+    const data: ApiResponse<{ transaction: Transaction }> = await response.json()
+    
+    if (data.success === false) {
+      throw new Error(data.message || 'Failed to fetch transaction')
+    }
+    
+    return data.transaction
   },
 
   // Get all transactions for vendor
   async getAllTransactions(): Promise<Transaction[]> {
     const response = await fetch(PAYMENT_API_URL, {
-      credentials: 'include' // Include auth cookies
+      method: 'GET',
+      credentials: 'include'
     })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Get Transactions API Error:', response.status, errorText)
+      throw new Error(`Failed to fetch transactions: ${response.status} ${response.statusText}`)
+    }
     
     const data: ApiResponse<{ transactions: Transaction[] }> = await response.json()
     
-    if (!data.success) {
+    if (data.success === false) {
       throw new Error(data.message || 'Failed to fetch transactions')
     }
     
@@ -184,16 +202,24 @@ export const paymentSessionAPI = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(sessionData),
-      credentials: 'include' // Include auth cookies
+      credentials: 'include'
     })
+    
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Payment Session API Error:', response.status, errorText)
+      throw new Error(`Failed to start payment session: ${response.status} ${response.statusText}`)
+    }
     
     const data = await response.json()
     
-    if (!data.success) {
+    // Handle different response formats
+    if (data.success === false) {
       throw new Error(data.message || 'Failed to start payment session')
     }
     
-    return data.session
+    // Return the session data directly if it exists, or the whole data object
+    return data.session || data
   },
 
   // Get payment session status
