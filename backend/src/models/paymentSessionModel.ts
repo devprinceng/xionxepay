@@ -1,11 +1,11 @@
 import mongoose from "mongoose";
-import { Transaction } from "./transactionModel";
 
 export interface PaymentSession extends mongoose.Document {
   sessionId:{ type: string; unique: true };
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true };
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }; // Product ID
   customerEmail?: string;
+  vendorWallet?:string;
   expectedAmount: string;
   status: "pending" | "completed" | "failed"| "expired";
   txHash?: string;
@@ -16,6 +16,7 @@ export interface PaymentSession extends mongoose.Document {
 const paymentSessionSchema = new mongoose.Schema({
   sessionId: { type: String, unique: true, required: true },
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true },
+  vendorWallet: { type: String, required: true }, // Vendor's wallet address
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // Product ID
   customerEmail:{ type: String, unique: true },
   expectedAmount: String,
