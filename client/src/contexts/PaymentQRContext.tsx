@@ -7,7 +7,8 @@ import QRCode from 'qrcode'
 import type { SigningStargateClient } from '@cosmjs/stargate'
 import { useAbstraxionSigningClient } from '@burnt-labs/abstraxion'
 import { useXion as useXionWallet } from './xion-context' // Import the XionContext hook with a different name
-import { paymentAPI, paymentLinksAPI, PaymentData, PaymentLink as APIPaymentLink } from '@/lib/payment-api'
+import { useVendor } from './vendor-context' // Import the VendorContext hook
+import { paymentAPI, paymentSessionAPI, PaymentData, PaymentLink as APIPaymentLink, Transaction, PaymentSession } from '@/lib/payment-api'
 
 // Define types for payment links and context
 export type PaymentLink = APIPaymentLink
@@ -56,6 +57,16 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
   // Get the Xion wallet address from XionContext if available
   const xionWallet = useXionWallet()
   
+  // Get vendor business profile for memo formatting (optional)
+  let businessProfile = null
+  try {
+    const vendorContext = useVendor()
+    businessProfile = vendorContext.businessProfile
+  } catch (error) {
+    // VendorProvider not available, use fallback
+    console.log('VendorProvider not available, using fallback business name')
+  }
+  
   // We'll make the Xion client integration optional
   // This way the app can work without an active wallet connection
   let xionClientAvailable = false
@@ -82,14 +93,42 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     }
   }, [])
 
-  // Load saved payment links from JSON server on component mount
+  // Load payment links from documented APIs on component mount
   useEffect(() => {
     const fetchPaymentLinks = async () => {
       try {
-        const links = await paymentLinksAPI.getAllPaymentLinks()
+        // Use documented APIs: get active sessions and transactions
+        const [sessions, transactions] = await Promise.all([
+          paymentSessionAPI.getActiveSessions(),
+          paymentAPI.getAllTransactions()
+        ])
+        
+        // Convert sessions to payment links format for UI compatibility
+        const links = sessions.map(session => {
+          const transaction = transactions.find(tx => tx.transactionId === session.transactionId)
+          
+          return {
+            id: session._id,
+            productId: session.productId,
+            productName: transaction ? 
+              (typeof transaction.productId === 'object' ? transaction.productId.name : 'Product') : 
+              'Product',
+            amount: session.expectedAmount,
+            description: session.memo,
+            created: session.createdAt,
+            link: `${window.location.origin}/pay/${session.transactionId}`,
+            qrCodeData: '', // Will be generated on demand
+            status: session.status,
+            transactionId: session.transactionId,
+            transactionHash: session.transactionHash
+          }
+        })
+        
         setPaymentLinks(links)
       } catch (error) {
         console.error('Failed to load payment links:', error)
+        // Set empty array as fallback
+        setPaymentLinks([])
       }
     }
     fetchPaymentLinks()
@@ -126,111 +165,52 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
   const { client: xionClient } = useAbstraxionSigningClient()
 
   // Update a payment link status
-  const updatePaymentLinkStatus = async (paymentLinkId: string, status: PaymentLink['status'], transactionId?: string) => {
-    // If we're marking as completed and have a transaction ID, try to verify the transaction
-    if (status === 'completed' && transactionId) {
-      try {
-        // Only verify if we have a client available
-        if (xionClient) {
-          // Verify the transaction on-chain using the Xion API
-          // The Xion testnet API endpoint is https://api.xion-testnet-2.burnt.com/
-          const txResult = await xionClient.getTx(transactionId)
-          
-          // Check if transaction was successful
-          if (txResult && txResult.code === 0) {
-            // Transaction was successful, update the status
-            try {
-              // Update payment link status in JSON server
-              const updatedLink = await paymentLinksAPI.updatePaymentLinkStatus(paymentLinkId, status, transactionId)
-              
-              // Update local state
-              setPaymentLinks(prevLinks => {
-                return prevLinks.map(link => {
-                  if (link.id === paymentLinkId) {
-                    return updatedLink
-                  }
-                  return link
-                })
-              })
-              
-              toast.success('Payment verified and completed successfully!')
-              return
-            } catch (error) {
-              console.error('Failed to update payment link status:', error)
-              toast.error('Failed to update payment status')
-            }
-          } else {
-            // Transaction failed or was not found
-            throw new Error('Transaction verification failed')
-          }
-        } else {
-          // No client available, just update status without verification
-          console.log('Xion client not available for verification, updating status directly')
-          try {
-            // Update payment link status in JSON server
-            const updatedLink = await paymentLinksAPI.updatePaymentLinkStatus(paymentLinkId, status, transactionId)
-            
-            // Update local state
-            setPaymentLinks(prevLinks => {
-              return prevLinks.map(link => {
-                if (link.id === paymentLinkId) {
-                  return updatedLink
-                }
-                return link
-              })
-            })
-            
-            toast.success('Payment marked as completed')
-            return
-          } catch (error) {
-            console.error('Failed to update payment link status:', error)
-            toast.error('Failed to update payment status')
-          }
-        }
-      } catch (error) {
-        console.error('Failed to verify transaction:', error)
-        toast.error('Failed to verify transaction')
-        
-        // Mark as failed if verification fails
-        try {
-          // Update payment link status in JSON server
-          const updatedLink = await paymentLinksAPI.updatePaymentLinkStatus(paymentLinkId, 'failed')
-          
-          // Update local state
-          setPaymentLinks(prevLinks => {
-            return prevLinks.map(link => {
-              if (link.id === paymentLinkId) {
-                return updatedLink
-              }
-              return link
-            })
-          })
-          return
-        } catch (error) {
-          console.error('Failed to update payment link status:', error)
-          toast.error('Failed to update payment status')
-        }
-      }
-    }
-    
+  const updatePaymentLinkStatus = async (paymentLinkId: string, status: PaymentLink['status'], transactionHash?: string) => {
     try {
-      // Update payment link status in JSON server
-      const updatedLink = await paymentLinksAPI.updatePaymentLinkStatus(paymentLinkId, status, transactionId)
-      
-      // Update local state
-      setPaymentLinks(prevLinks => {
-        return prevLinks.map(link => {
-          if (link.id === paymentLinkId) {
-            return updatedLink
-          }
-          return link
+      if (status === 'completed' && transactionHash) {
+        // Complete the payment session using the new API
+        // Complete the payment session using documented API
+        await paymentSessionAPI.completeSession(paymentLinkId, transactionHash)
+        
+        // Create updated link object for local state
+        const updatedLink = {
+          ...paymentLinks.find(link => link.id === paymentLinkId)!,
+          status: 'completed' as const,
+          transactionHash
+        }
+        
+        // Update local state
+        setPaymentLinks(prevLinks => {
+          return prevLinks.map(link => {
+            if (link.id === paymentLinkId) {
+              return updatedLink
+            }
+            return link
+          })
         })
-      })
-      
-      if (status === 'completed') {
+        
         toast.success('Payment completed successfully!')
-      } else if (status === 'failed') {
-        toast.error('Payment failed')
+      } else {
+        // For other status updates, we don't have direct support in the new API
+        // Just update local state for now
+        setPaymentLinks(prevLinks => {
+          return prevLinks.map(link => {
+            if (link.id === paymentLinkId) {
+              return {
+                ...link,
+                status,
+                transactionHash
+              }
+            }
+            return link
+          })
+        })
+        
+        if (status === 'failed') {
+          toast.error('Payment failed')
+        } else {
+          toast.success(`Payment status updated to ${status}`)
+        }
       }
     } catch (error) {
       console.error('Failed to update payment link status:', error)
@@ -241,15 +221,16 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
   // Delete a specific payment link
   const deletePaymentLink = (paymentLinkId: string) => {
     try {
-      // Delete payment link from JSON server
-      paymentLinksAPI.deletePaymentLink(paymentLinkId)
+      // Note: The documented APIs don't have a delete endpoint for payment sessions
+      // We'll just remove from local state for now
+      console.warn('Payment session deletion not supported in documented API, removing from local state only')
       
       // Update local state
       setPaymentLinks(prevLinks => prevLinks.filter(link => link.id !== paymentLinkId))
-      toast.success('Payment link deleted')
+      toast.success('Payment link removed from view')
     } catch (error) {
-      console.error('Failed to delete payment link:', error)
-      toast.error('Failed to delete payment link')
+      console.error('Failed to remove payment link:', error)
+      toast.error('Failed to remove payment link')
     }
   }
 
@@ -276,27 +257,33 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     try {
       setIsGenerating(true)
       
-      // Create a unique transaction ID
-      const txId = `tx_${Date.now().toString(36)}`
-      
-      // Create simplified payment link URL - just /pay/{txId}
-      const baseUrl = process.env.NEXT_PUBLIC_PAYMENT_BASE_URL || window.location.origin
-      const paymentLink = `${baseUrl}/pay/${txId}`
-      
-      // Create payment data for JSON server
-      const paymentData: Omit<PaymentData, 'id'> = {
-        txId: txId,
+      // Create a transaction using the new API
+      const transaction = await paymentAPI.createTransaction({
+        amount: parseFloat(amount),
         productId: productId,
-        productName: productName,
-        amount: amount,
-        description: description,
-        recipient: userXionAddress || '',
-        created: new Date().toISOString(),
-        status: 'pending'
-      }
+        description: description
+      })
       
-      // Store payment data in JSON server
-      await paymentAPI.createPayment(paymentData)
+      // Create a payment session with consistent sessionId
+      const sessionId = `session_${Date.now().toString(36)}`
+      
+      // Create structured memo: APP_NAME/VENDOR_BUSINESS_NAME/PRODUCT_NAME/SESSIONID
+      const APP_NAME = 'xionxepay-pos'
+      const VENDOR_BUSINESS_NAME = businessProfile?.businessName || 'XionXEPay' // Get from vendor context
+      const structuredMemo = `${APP_NAME}/${VENDOR_BUSINESS_NAME}/${productName}/${sessionId}`
+      
+      // Use the same sessionId for both memo and payment session API
+      const session = await paymentSessionAPI.startPaymentSession({
+        transactionId: transaction.transactionId,
+        productId: productId,
+        expectedAmount: amount,
+        sessionId: sessionId, // Same sessionId used in memo
+        memo: structuredMemo
+      })
+      
+      // Create simplified payment link URL - just /pay/{transactionId}
+      const baseUrl = process.env.NEXT_PUBLIC_PAYMENT_BASE_URL || window.location.origin
+      const paymentLink = `${baseUrl}/pay/${transaction.transactionId}`
       
       // Generate QR code for the simplified payment link
       const qrCodeData = await QRCode.toDataURL(paymentLink, {
@@ -313,15 +300,18 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
         productName,
         amount,
         description,
-        created: new Date().toISOString(),
+        created: session.createdAt,
         link: paymentLink,
         qrCodeData,
-        status: 'pending',
-        transactionId: txId
+        status: session.status,
+        transactionId: transaction.transactionId
       }
       
-      // Store payment link in JSON server
-      const newLink = await paymentLinksAPI.createPaymentLink(newLinkData)
+      // Create payment link object for local state (session already created above)
+      const newLink = {
+        id: session._id,
+        ...newLinkData
+      }
       
       // Update state with the new payment link
       setPaymentLinks(prevLinks => [newLink, ...prevLinks])

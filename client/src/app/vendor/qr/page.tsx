@@ -41,14 +41,23 @@ const QRPage = () => {
   useEffect(() => {
     const handlePaymentCompleted = (event: CustomEvent) => {
       const { transactionHash, txId } = event.detail
+      console.log('Payment completed event received:', { transactionHash, txId })
       
       // Find the payment link with this txId and update its status
       const paymentLink = paymentLinks.find(link => {
         // Extract txId from the payment link URL
         try {
-          const url = new URL(link.link) // Use link property instead of url
-          const linkTxId = url.searchParams.get('txId')
-          return linkTxId === txId
+          const url = new URL(link.link)
+          
+          // Check if txId is in the path (new format: /pay/{txId})
+          const pathSegments = url.pathname.split('/')
+          const lastSegment = pathSegments[pathSegments.length - 1]
+          
+          // Also check if it's in query params (old format) as a fallback
+          const queryTxId = url.searchParams.get('txId')
+          
+          // Match either path or query parameter
+          return lastSegment === txId || queryTxId === txId || link.transactionId === txId
         } catch (error) {
           console.error('Invalid URL in payment link:', error)
           return false
@@ -56,6 +65,7 @@ const QRPage = () => {
       })
       
       if (paymentLink) {
+        console.log('Found matching payment link, updating status:', paymentLink)
         updatePaymentLinkStatus(paymentLink.id, 'completed', transactionHash)
       } else {
         console.log('Payment completed but no matching payment link found for txId:', txId)
@@ -353,16 +363,7 @@ const QRPage = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center">
                         <p className="font-medium truncate">{link.amount} USDC</p>
-                        {link.status && (
-                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                            link.status === 'completed' ? 'bg-green-900/30 text-green-400' : 
-                            link.status === 'failed' ? 'bg-red-900/30 text-red-400' : 
-                            'bg-yellow-900/30 text-yellow-400'
-                          }`}>
-                            {link.status === 'completed' ? 'Paid' : 
-                             link.status === 'failed' ? 'Failed' : 'Pending'}
-                          </span>
-                        )}
+                        
                       </div>
                       <p className="text-sm text-gray-400 truncate">{link.productName || getProductName(link.productId)}</p>
                       <p className="text-xs text-gray-500">
