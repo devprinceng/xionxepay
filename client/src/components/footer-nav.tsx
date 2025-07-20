@@ -35,7 +35,7 @@ export function FooterNav() {
       initial={{ y: 100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8, delay: 1 }}
-      className="fixed bottom-6 left-0 right-0 z-50 md:bottom-8 flex justify-center md:hidden"
+      className="fixed bottom-6 left-0 right-0 z-50 md:bottom-8 flex justify-center md:hidden hidden"
     >
       <div className="bg-gray-900/20 backdrop-blur-2xl border border-white/10 rounded-2xl px-4 py-3 shadow-2xl">
         <div className="flex items-center justify-center space-x-2 sm:space-x-4">

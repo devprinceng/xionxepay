@@ -86,7 +86,7 @@ export function HeroSection() {
                 { icon: Shield, text: 'Gasless Payments' },
                 { icon: Smartphone, text: 'Mobile First' },
                 { icon: QrCode, text: 'QR Code Simple' },
-              ].map((feature, index) => {
+              ].map((feature) => {
                 const Icon = feature.icon
                 return (
                   <div
@@ -105,13 +105,23 @@ export function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col gap-4"
             >
               <Link href="/register">
-              <Button variant="gradient" size="xl" className="glow-effect">
-                Start Accepting Payments
-              </Button>
+                <Button variant="gradient" size="xl" className="glow-effect">
+                  Start Accepting Payments
+                </Button>
               </Link>
+              {/* <Link href="/vendor">
+                <Button variant="outline" size="xl">
+                  View Demo Dashboard
+                </Button>
+              </Link>
+              <Link href="/admin">
+                <Button variant="outline" size="xl" className="border-red-500/30 text-red-400 hover:bg-red-500/20">
+                  Admin Panel
+                </Button>
+              </Link> */}
               
             </motion.div>
 

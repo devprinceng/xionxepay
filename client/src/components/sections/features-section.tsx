@@ -62,7 +62,7 @@ export function FeaturesSection() {
             <span className="text-white">XionxePay?</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto">
-            Built for the future of payments, designed for today's businesses. 
+            Built for the future of payments, designed for today&apos;s businesses. 
             Experience the power of Web3 without the complexity.
           </p>
         </motion.div>

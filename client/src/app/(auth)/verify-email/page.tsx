@@ -1,15 +1,15 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, Suspense } from 'react'
 import { AuthSplitLayout } from '@/components/sections/auth-split-layout'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { MailCheck } from 'lucide-react'
+import { Loader2, MailCheck } from 'lucide-react'
 import { z } from 'zod'
 import { create } from 'zustand'
 import { useAuth } from '@/contexts/auth-context'
 import { toast } from 'sonner'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const otpSchema = z.object({
   otp: z.string().length(6, { message: 'OTP must be 6 digits' })
@@ -51,21 +51,32 @@ function VerifyEmailVisual() {
   )
 }
 
-export default function VerifyEmailPage() {
+function VerifyEmailPageContent() {
   const { otp, errors, setOtp, setErrors, reset } = useVerifyEmailForm()
-  const { sendVerifyOtp, verifyEmail, loading, error } = useAuth()
+  const { sendVerifyOtp, verifyEmail, loading: authLoading, error } = useAuth()
   const router = useRouter()
-  // TODO: Get vendorID from context, query, or registration response
-  const vendorID = ''
+  const searchParams = useSearchParams()
+  const emailFromQuery = searchParams.get('id') || ''
+  const otpFromQuery = searchParams.get('otp') || ''
+  const [email, setEmail] = useState(emailFromQuery)
   const [success, setSuccess] = useState(false)
   const [resent, setResent] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  // Prefill OTP and email from query params
+  React.useEffect(() => {
+    if (emailFromQuery) setEmail(emailFromQuery)
+    if (otpFromQuery) setOtp(otpFromQuery)
+  }, [emailFromQuery, otpFromQuery, setOtp])
 
   const handleResend = async () => {
     setResent(false)
+    setLoading(true)
     try {
-      await sendVerifyOtp(vendorID)
+      await sendVerifyOtp(email)
       setResent(true)
     } catch {}
+    setLoading(false)
   }
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -78,7 +89,7 @@ export default function VerifyEmailPage() {
     }
     setLoading(true)
     try {
-      await verifyEmail(vendorID, otp)
+      await verifyEmail(email, otp)
       setLoading(false)
       toast.success('Email verified! You can now sign in.')
       router.push('/signin')
@@ -116,15 +127,24 @@ export default function VerifyEmailPage() {
               />
               {errors.otp && <div className="text-red-400 text-sm mt-1">{errors.otp}</div>}
             </div>
-            <Button type="submit" variant="gradient" size="lg" className="w-full mt-2" disabled={loading}>
-              {loading ? 'Verifying...' : 'Verify Email'}
+            <input type="hidden" name="email" value={email} />
+            <Button type="submit" variant="gradient" size="lg" className="w-full mt-2" disabled={loading || authLoading}>
+              {loading || authLoading ? 'Verifying...' : 'Verify Email'}
             </Button>
           </form>
         )}
-        <Button onClick={handleResend} variant="outline" size="sm" className="w-full mt-4" disabled={loading}>
+        <Button onClick={handleResend} variant="link" size="sm" className="w-full mt-4" disabled={loading || authLoading}>
           {resent ? 'Verification Link Sent!' : 'Resend Verification Code'}
         </Button>
       </div>
     </AuthSplitLayout>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen text-aurora-blue-300"><Loader2 className='animate-spin'/></div>}>
+      <VerifyEmailPageContent />
+    </Suspense>
   )
 } 
