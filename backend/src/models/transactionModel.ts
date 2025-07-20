@@ -4,11 +4,12 @@ const transactionSchema = new mongoose.Schema(
     {
         amount: { type: Number, required: true }, 
         vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true }, 
-        productIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }], // Array of product IDs
-        status: { type: String, enum: ["pending", "completed", "failed"], default: "pending" }, 
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // Product ID
+        status: { type: String, enum: ["pending", "completed", "failed", "expired"], default: "pending" }, 
         description: { type: String, default: "" }, 
-        transactionHash: { type: String, required: true, unique: true },
-        url:{ type: String, default: "" }, // URL to the transaction details or receipt
+        transactionId: { type: String, unique: true,}, // Unique transaction ID
+        transactionHash: { type: String, unique: true },
+        transactionTime: { type: Date}, // Timestamp of the transaction completion
     },
     {
         timestamps: true, 

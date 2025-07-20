@@ -46,7 +46,7 @@ const welcomeMail = (email: string, name: string, verifyEmailLink: string): Emai
 </html>`,
 });
 
-const verifyEmailTemplate = (email: string, name: string, link: string): EmailTemplateOptions => ({
+const verifyEmailTemplate = (email: string, name: string, link: string,): EmailTemplateOptions => ({
     from: process.env.EMAIL_FROM || '',
     to: email,
     subject: `Verify your email for ${process.env.APP_NAME}`,
@@ -63,6 +63,97 @@ const verifyEmailTemplate = (email: string, name: string, link: string): EmailTe
   </body>
 </html>`,
 });
+
+const paymentSuccessEmailTemplate = (email:string,txHash:string,sessionId:string, amount:string):EmailTemplateOptions =>({
+  from:process.env.EMAIL_FROM || '',
+  to:email,
+  subject:`Payment Success for ${process.env.APP_NAME}`,
+  text:`Hello,\n\nYour payment of ${amount} was successful. Your transaction hash is ${txHash}.\n\nBest regards,\n${process.env.APP_NAME}`,
+  html:`
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Payment Received</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f6f9fc;
+        padding: 20px;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        padding: 30px;
+      }
+      .success {
+        color: #28a745;
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .details {
+        margin: 15px 0;
+      }
+      .footer {
+        font-size: 12px;
+        color: #888;
+        margin-top: 30px;
+      }
+      a {
+        color: #007bff;
+        text-decoration: none;
+      }
+      code {
+        background-color: #f1f1f1;
+        padding: 2px 4px;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <p class="success">✅ Payment Received</p>
+      <p>We have successfully received your payment of <strong>${amount}</strong>.</p>
+
+      <div class="details">
+        <p><strong>Transaction Hash:</strong><br /><code>${txHash}</code></p>
+        <p><strong>Session ID:</strong><br /><code>${sessionId}</code></p>
+      </div>
+
+      <p>You may keep this email for your records. Thank you for your transaction.</p>
+
+      <div class="footer">
+        &copy; ${new Date().getFullYear()} ScanPay POS • Powered by Xion Protocol
+      </div>
+    </div>
+  </body>
+</html>
+`
+});
+
+const paymentTimeoutEmailTemplate = (email:string, expectedAmount: string, sessionId: string): EmailTemplateOptions => ({
+    from: process.env.EMAIL_FROM || '',
+    to: email,
+    subject: `Payment Timeout for Session ${sessionId}`,
+    text: `Hello,\n\nYour payment session with ID ${sessionId} has timed out. The expected amount was ${expectedAmount}.\n\nPlease initiate a new payment session if you wish to proceed.\n\nBest regards,\n${process.env.APP_NAME}`,
+    html: `<html>
+  <body style="background-color:hsl(222.2, 84%, 4.9%); color:hsl(210, 40%, 98%); font-family:sans-serif; padding: 2rem;">
+    <div style="max-width:600px; margin:auto; background:hsl(222.2, 84%, 4.9%); border-radius:8px; padding:2rem;">
+      <h1 style="color:hsl(217.2, 91.2%, 59.8%)">Payment Timeout</h1>
+      <p>Hello,</p>
+      <p>Your payment session with ID <strong>${sessionId}</strong> has timed out. The expected amount was <strong>${expectedAmount}</strong>.</p>
+      <p>Please initiate a new payment session if you wish to proceed.</p>
+      <p style="margin-top:2rem; font-size:0.85rem; color:hsl(215, 20.2%, 65.1%)">If you have any questions, feel free to contact our support team.</p>
+    </div>
+  </body>
+</html>`,
+})
 
 export const sendVerificationEmail = async (email: string, name: string, verifyEmailLink: string): Promise<EmailTemplateOptions> => {
     const mail = verifyEmailTemplate(email, name, verifyEmailLink);
@@ -81,6 +172,24 @@ export const sendResetPasswordEmail = async (email: string, name: string, resetP
     await transporter.sendMail(mail);
     return mail;
 };
+
+
+
+
+export const paymentSuccessEmail = async (email:string,amount: string, txHash: string, sessionId: string): Promise<EmailTemplateOptions> => {
+  const mail = paymentSuccessEmailTemplate(email,txHash,sessionId,amount);
+  await transporter.sendMail(mail);
+  return mail;
+}
+
+
+export const paymentTimeoutEmail = async (email:string, expectedAmount: string, sessionId: string): Promise<EmailTemplateOptions> => {
+  const mail = paymentTimeoutEmailTemplate(email, expectedAmount, sessionId);
+  await transporter.sendMail(mail);
+  return mail;
+};
+
+
 
 
 
