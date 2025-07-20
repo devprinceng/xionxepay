@@ -1,11 +1,11 @@
 "use client"
 
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AuthSplitLayout } from '@/components/sections/auth-split-layout'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
-import { KeyRound } from 'lucide-react'
+import { KeyRound, Loader2 } from 'lucide-react'
 import { z } from 'zod'
 import { create } from 'zustand'
 import { useAuth } from '@/contexts/auth-context'
@@ -65,18 +65,25 @@ function ResetPasswordVisual() {
   )
 }
 
-export default function ResetPasswordPage() {
+function ResetPasswordPageContent() {
   const { values, errors, loading, success, setValue, setErrors, setLoading, setSuccess, reset } = useResetForm()
   const router = useRouter()
   const searchParams = useSearchParams()
   const emailFromQuery = searchParams.get('email')
+  const otpFromQuery = searchParams.get('otp')
+  const idFromQuery = searchParams.get('id')
   const { resetPassword, loading: authLoading, error: authError } = useAuth()
 
   useEffect(() => {
-    if (emailFromQuery) {
+    if (idFromQuery) {
+      setValue('email', idFromQuery)
+    } else if (emailFromQuery) {
       setValue('email', emailFromQuery)
     }
-  }, [emailFromQuery, setValue])
+    if (otpFromQuery) {
+      setValue('otp', otpFromQuery)
+    }
+  }, [idFromQuery, emailFromQuery, otpFromQuery, setValue])
 
   useEffect(() => {
     if (success) {
@@ -105,11 +112,13 @@ export default function ResetPasswordPage() {
     }
     setLoading(true)
     try {
-      await resetPassword({
+      const payload = {
         email: values.email,
         otp: values.otp,
         newPassword: values.password,
-      })
+      }
+      console.log('Reset password payload:', payload)
+      await resetPassword(payload)
       setLoading(false)
       toast.success('Password reset successful! Please login.')
       router.push('/signin')
@@ -191,5 +200,13 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </AuthSplitLayout>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen text-aurora-blue-300"><Loader2 className='animate-spin'/></div>}>
+      <ResetPasswordPageContent />
+    </Suspense>
   )
 } 
