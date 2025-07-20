@@ -64,77 +64,110 @@ const verifyEmailTemplate = (email: string, name: string, link: string,): EmailT
 </html>`,
 });
 
-const paymentSuccessEmailTemplate = (email:string,txHash:string,sessionId:string, amount:string):EmailTemplateOptions =>({
+const paymentSuccessEmailTemplate = (email:string,txHash:string,productName:string, amount:string):EmailTemplateOptions =>({
   from:process.env.EMAIL_FROM || '',
   to:email,
   subject:`Payment Success for ${process.env.APP_NAME}`,
   text:`Hello,\n\nYour payment of ${amount} was successful. Your transaction hash is ${txHash}.\n\nBest regards,\n${process.env.APP_NAME}`,
   html:`
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Payment Received</title>
+    <title>Invoice - Payment Received</title>
     <style>
       body {
-        font-family: Arial, sans-serif;
-        background-color: #f6f9fc;
-        padding: 20px;
-        color: #333;
+        margin: 0;
+        padding: 0;
+        background-color: #0f172a;
+        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        color: #f1f5f9;
       }
       .container {
         max-width: 600px;
         margin: auto;
-        background-color: #fff;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        background-color: #1e293b;
         padding: 30px;
+        border-radius: 8px;
       }
-      .success {
-        color: #28a745;
-        font-size: 20px;
-        font-weight: bold;
-        margin-bottom: 10px;
+      h1 {
+        color: #22c55e;
+        font-size: 24px;
+      }
+      p {
+        line-height: 1.6;
+        font-size: 16px;
       }
       .details {
-        margin: 15px 0;
+        background-color: #334155;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 20px 0;
+        color: #f8fafc;
+        font-size: 15px;
+      }
+      .details strong {
+        color: #38bdf8;
+      }
+      .button {
+        display: inline-block;
+        background-color: #3b82f6;
+        color: #0f172a;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 5px;
+        font-weight: bold;
+        margin-top: 20px;
       }
       .footer {
-        font-size: 12px;
-        color: #888;
         margin-top: 30px;
-      }
-      a {
-        color: #007bff;
-        text-decoration: none;
+        font-size: 13px;
+        color: #94a3b8;
+        text-align: center;
       }
       code {
-        background-color: #f1f1f1;
-        padding: 2px 4px;
+        background-color: #0f172a;
+        padding: 4px 8px;
         border-radius: 4px;
-        font-size: 14px;
+        font-family: monospace;
+        font-size: 13px;
+        display: inline-block;
+        word-break: break-all;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <p class="success">✅ Payment Received</p>
-      <p>We have successfully received your payment of <strong>${amount}</strong>.</p>
+      <h1>✅ Payment Received</h1>
+      <p>
+        Hello,<br />
+        We’ve received your payment of <strong>$${amount}</strong> for the product:
+        <strong>${productName}</strong>.
+      </p>
 
       <div class="details">
+        <p><strong>Status:</strong> Completed</p>
+        <p><strong>Product:</strong> ${productName}</p>
+        <p><strong>Amount:</strong> $${amount}</p>
         <p><strong>Transaction Hash:</strong><br /><code>${txHash}</code></p>
-        <p><strong>Session ID:</strong><br /><code>${sessionId}</code></p>
       </div>
 
-      <p>You may keep this email for your records. Thank you for your transaction.</p>
+      <a class="button" href="https://explorer.burnt.com/txs/${txHash}" target="_blank">
+        🔍 View on Explorer
+      </a>
+
+      <p style="margin-top: 30px;">
+        You can keep this invoice for your records.<br />
+        Thank you for using our service.
+      </p>
 
       <div class="footer">
-        &copy; ${new Date().getFullYear()} ScanPay POS • Powered by Xion Protocol
+        &copy; ${new Date().getFullYear()} ${process.env.APP_NAME || "YourApp"} • Powered by Xion Protocol
       </div>
     </div>
   </body>
 </html>
-`
+  `,
 });
 
 const paymentTimeoutEmailTemplate = (email:string, expectedAmount: string, sessionId: string): EmailTemplateOptions => ({
@@ -176,8 +209,8 @@ export const sendResetPasswordEmail = async (email: string, name: string, resetP
 
 
 
-export const paymentSuccessEmail = async (email:string,amount: string, txHash: string, sessionId: string): Promise<EmailTemplateOptions> => {
-  const mail = paymentSuccessEmailTemplate(email,txHash,sessionId,amount);
+export const paymentSuccessEmail = async (email:string,amount: string, txHash: string, productName: string): Promise<EmailTemplateOptions> => {
+  const mail = paymentSuccessEmailTemplate(email,txHash,productName,amount);
   await transporter.sendMail(mail);
   return mail;
 }

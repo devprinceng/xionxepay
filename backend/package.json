@@ -17,7 +17,7 @@
     "url": "git+https://github.com/devprinceng/xionxepay.git"
   },
   "license": "ISC",
-  "author": "Prince Ojoi, Oghenetega Benjamin",
+  "author": "Prince Ojoi, Oghenetega Benjamin Omoraka",
   "type": "commonjs",
   "main": "index.js",
   "scripts": {

@@ -2,19 +2,20 @@ import { Request, Response } from 'express';
 import { PaymentSession } from '../models/paymentSessionModel';
 import { paymentSuccessEmail } from '../utils/mailer'; 
 import { Vendor } from '../models/vendorModel';
+import { Product } from '../models/productModel';
 // import { tryCatch } from 'bullmq';
 // import { paymentQueue } from '../queues/paymentQueue';
 
 export const startPaymentSession = async (req: Request, res: Response) => {
-  const {transactionId, productId, expectedAmount, sessionId, memo} = req.body;
+  const {transactionId, productId, expectedAmount, sessionId, memo, vendorWallet} = req.body;
   const vendorId = req.user?._id;
 
-  if (!transactionId || !productId || !expectedAmount || !sessionId || !memo) {
+  if (!transactionId || !productId || !expectedAmount || !sessionId || !memo || !vendorWallet) {
     res.status(400).json({ success: false, message: 'Missing required fields' });
     return;
   }
  try {
-  await PaymentSession.create({ sessionId, vendorId, productId, expectedAmount, memo, transactionId});
+  await PaymentSession.create({ sessionId, vendorId, productId, expectedAmount, memo, transactionId, vendorWallet });
   // await paymentQueue.add('poll-xion', { sessionId, address, expectedAmount, expiresAt,memo }, {
   //   attempts: 3,
   //   backoff: { type: 'exponential', delay: 10000 }
@@ -31,11 +32,21 @@ export const startPaymentSession = async (req: Request, res: Response) => {
 export const getPaymentStatus = async (req: Request, res: Response) => {
   const { sessionId } = req.params;
   try{
-    const session = await PaymentSession.findOne({ sessionId }).populate('productId', 'name price');
+    const session = await PaymentSession.findOne({ sessionId });
     if (!session) {
       res.status(404).json({ success: false, message: 'Session not found' });
       return;
     }
+    if(!session.expiresAt) {
+      res.status(400).json({ success: false, message: 'Session has no expiration date' });
+      return;
+    } 
+    if (session.status === "pending" && session.expiresAt < new Date()) {
+    session.status = "expired";
+    await session.save();
+    res.status(200).json({ success: false, message: 'Session has expired' });
+    return;
+  }
     res.status(200).json({ success: true, session });
     return;
   }catch(error){
@@ -97,6 +108,13 @@ export const completePaymentSession = async (req: Request, res: Response) => {
     res.status(404).json({ success: false, message: 'Vendor not found' });
     return;
   }
+  const product = await Product.findById(session.productId);
+  if (!product) {
+    res.status(404).json({ success: false, message: 'Product not found' });
+    return;
+  }
+  const productName = product.name;
+
   const vendorEmail = vendor.email;
   if (!vendorEmail) {
     res.status(404).json({ success: false, message: 'Vendor not found' });
@@ -104,10 +122,10 @@ export const completePaymentSession = async (req: Request, res: Response) => {
   }
   
   await paymentSuccessEmail(
-              vendorEmail || '',
+              vendorEmail,
               session.expectedAmount || '',
               session.txHash || '',
-              sessionId
+              productName
             );
           
           
@@ -128,7 +146,7 @@ export const completePaymentSession = async (req: Request, res: Response) => {
               session.customerEmail || '',
               session.expectedAmount || '',
               session.txHash || '',
-              sessionId
+              productName
             );
   res.status(200).json({ success: true, session });
   return;
