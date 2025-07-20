@@ -41,4 +41,8 @@ app.use('/api/auth', authRouter);
 app.use('/api/vendor',vendorRouter);
 
 app.use('/api/product', productRouter);
+
+app.use('/api/payment', require('./routes/paymentRoute'));
+app.use('/api/payment-sessions', require('./routes/paymentSessionRoute'));
+
 export default app;
