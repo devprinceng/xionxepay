@@ -26,7 +26,7 @@ const paymentSessionSchema = new mongoose.Schema({
     default: "pending",
   },
   transactionId: { type: String, unique: true,}, 
-  txHash: { type: String, unique: true },
+  txHash: { type: String, unique: true , sparse:true},
   createdAt: { type: Date, default: Date.now },
   expiresAt: Date,
 });
