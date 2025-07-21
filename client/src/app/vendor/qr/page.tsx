@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
@@ -9,6 +10,7 @@ import { useProducts } from '@/contexts/ProductContext'
 import { useXion } from '@/contexts/PaymentQRContext'
 import { PaymentLink } from '@/contexts/PaymentQRContext'
 import { toast } from 'sonner'
+import QRCode from 'qrcode'
 
 const QRPage = () => {
   const { products, loading: productsLoading, fetchProducts } = useProducts()
@@ -30,6 +32,10 @@ const QRPage = () => {
   const [showCustomForm, setShowCustomForm] = useState(false)
   const [showAddressForm, setShowAddressForm] = useState(false)
   const [xionAddressInput, setXionAddressInput] = useState('')
+  
+  // Real-time QR code preview
+  const [previewQRCode, setPreviewQRCode] = useState<string | null>(null)
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false)
 
   useEffect(() => {
     // Load products on component mount
@@ -37,6 +43,52 @@ const QRPage = () => {
       fetchProducts()
     }
   }, [products, productsLoading, fetchProducts])
+
+  // Generate real-time QR code preview
+  const generatePreviewQRCode = async (amount: string, description: string) => {
+    if (!amount || !description || !userXionAddress) {
+      setPreviewQRCode(null)
+      return
+    }
+
+    setIsGeneratingPreview(true)
+    try {
+      // Create a temporary session ID for preview
+      const previewSessionId = `preview_${Date.now()}`
+      const paymentUrl = `${process.env.NEXT_PUBLIC_PAYMENT_BASE_URL || 'http://localhost:3000'}/pay/${previewSessionId}?amount=${encodeURIComponent(amount)}&description=${encodeURIComponent(description)}&recipient=${encodeURIComponent(userXionAddress)}`
+      
+      const qrCodeDataUrl = await QRCode.toDataURL(paymentUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      
+      setPreviewQRCode(qrCodeDataUrl)
+    } catch (error) {
+      console.error('Error generating preview QR code:', error)
+      setPreviewQRCode(null)
+    } finally {
+      setIsGeneratingPreview(false)
+    }
+  }
+
+  // Update preview QR code when custom form values change
+  useEffect(() => {
+    if (showCustomForm && customAmount && description) {
+      const debounceTimer = setTimeout(() => {
+        generatePreviewQRCode(customAmount, description)
+      }, 500) // Debounce for 500ms
+      
+      return () => clearTimeout(debounceTimer)
+    } else {
+      setPreviewQRCode(null)
+    }
+  }, [showCustomForm, customAmount, description, userXionAddress])
+
+
 
   useEffect(() => {
     const handlePaymentCompleted = (event: CustomEvent) => {
@@ -217,7 +269,7 @@ const QRPage = () => {
                     disabled={isGenerating || productsLoading}
                   >
                     <option value="">Select a product</option>
-                    {products.map((product) => (
+                    {products.slice().reverse().map((product) => (
                       <option key={product._id} value={product._id}>
                         {product.name} - ${product.price}
                       </option>
@@ -267,7 +319,7 @@ const QRPage = () => {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-400 mb-1">Amount (USDC)</label>
+                  <label className="block text-sm font-medium text-gray-400 mb-1">Amount (XION)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -292,6 +344,49 @@ const QRPage = () => {
                   />
                 </div>
 
+                {/* Real-time QR Code Preview */}
+                {(customAmount || description) && (
+                  <div className="mt-4 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-gray-300">Live Preview</h4>
+                      {!userXionAddress && (
+                        <span className="text-xs text-amber-400">Set Xion address to generate QR</span>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center justify-center">
+                      {isGeneratingPreview ? (
+                        <div className="flex flex-col items-center space-y-2">
+                          <Loader2 className="w-8 h-8 animate-spin text-blue-400" />
+                          <span className="text-xs text-gray-400">Generating preview...</span>
+                        </div>
+                      ) : previewQRCode ? (
+                        <div className="flex flex-col items-center space-y-2">
+                          <Image 
+                            src={previewQRCode} 
+                            alt="QR Code Preview" 
+                            width={150}
+                            height={150}
+                            className="rounded border border-gray-600"
+                            unoptimized={true}
+                          />
+                          <div className="text-center">
+                            <p className="text-xs text-gray-400">Preview: {customAmount} XION</p>
+                            <p className="text-xs text-gray-500 truncate max-w-[150px]">{description}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-2 text-gray-500">
+                          <QrCode className="w-12 h-12" />
+                          <span className="text-xs text-center">
+                            {!userXionAddress ? 'Set Xion address first' : 'Enter amount and description'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex space-x-2">
                   <Button 
                     variant="outline" 
@@ -300,6 +395,7 @@ const QRPage = () => {
                       setShowCustomForm(false)
                       setCustomAmount('')
                       setDescription('')
+                      setPreviewQRCode(null)
                     }}
                     disabled={isGenerating}
                   >
@@ -359,10 +455,29 @@ const QRPage = () => {
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 -mr-2">
                 {paymentLinks.map((link) => (
-                  <div key={link.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors">
+                  <div key={link.id} className="flex items-center gap-4 p-4 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors">
+                    {/* QR Code Display */}
+                    <div className="flex-shrink-0">
+                      {link.qrCodeData ? (
+                        <Image 
+                          src={link.qrCodeData} 
+                          alt="Payment QR Code" 
+                          width={80}
+                          height={80}
+                          className="w-20 h-20 rounded border border-gray-600"
+                          unoptimized={true}
+                        />
+                      ) : (
+                        <div className="w-20 h-20 bg-gray-700 rounded border border-gray-600 flex items-center justify-center">
+                          <QrCode className="w-8 h-8 text-gray-500" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Payment Details */}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center">
-                        <p className="font-medium truncate">{link.amount} USDC</p>
+                        <p className="font-medium truncate">{link.amount} XION</p>
                         
                       </div>
                       <p className="text-sm text-gray-400 truncate">{link.productName || getProductName(link.productId)}</p>
