@@ -180,25 +180,6 @@ const QRPage = () => {
       >
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-bold text-white">QR Code Generator</h2>
-          {userXionAddress ? (
-            <div className="flex items-center">
-              <span className="text-sm text-green-400 mr-2">✓ Xion Address Set</span>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowAddressForm(true)}
-              >
-                Change
-              </Button>
-            </div>
-          ) : (
-            <Button 
-              variant="outline"
-              onClick={() => setShowAddressForm(true)}
-            >
-              Set Xion Address
-            </Button>
-          )}
         </div>
         <p className="text-gray-400">Create payment QR codes for your customers</p>
       </motion.div>

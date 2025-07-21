@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AuthSplitLayout } from '@/components/sections/auth-split-layout'
@@ -60,7 +60,14 @@ function LoginVisual() {
 export default function LoginPage() {
   const { values, errors, loading, setValue, setErrors, setLoading, reset } = useSigninForm()
   const router = useRouter()
-  const { login, loading: authLoading, error: authError } = useAuth()
+  const { user, login, loading: authLoading, error: authError } = useAuth()
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      router.push('/vendor')
+    }
+  }, [user, router])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.name, e.target.value)
