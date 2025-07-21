@@ -18,7 +18,7 @@ const paymentSessionSchema = new mongoose.Schema({
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true },
   vendorWallet: { type: String, required: true }, // Vendor's wallet address
   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // Product ID
-  customerEmail:{ type: String, unique: true },
+  customerEmail:{ type: String, sparse: true }, // Optional customer email for notifications
   expectedAmount: String,
   status: {
     type: String,
