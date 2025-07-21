@@ -85,8 +85,8 @@ export interface PaymentLink {
 export const paymentAPI = {
   // Create a new transaction
   async createTransaction(transactionData: { amount: number, productId: string, description: string }): Promise<Transaction> {
-    console.log('Creating transaction with data:', transactionData)
-    console.log('API URL:', PAYMENT_API_URL)
+    // console.log('Creating transaction with data:', transactionData)
+    // console.log('API URL:', PAYMENT_API_URL)
     
     const response = await fetch(PAYMENT_API_URL, {
       method: 'POST',
@@ -97,8 +97,8 @@ export const paymentAPI = {
       credentials: 'include' // Include auth cookies
     })
     
-    console.log('Response status:', response.status)
-    console.log('Response headers:', Object.fromEntries(response.headers.entries()))
+    // console.log('Response status:', response.status)
+    // console.log('Response headers:', Object.fromEntries(response.headers.entries()))
     
     if (!response.ok) {
       console.error('🚨 API Request Failed - Starting detailed error analysis...')
@@ -107,7 +107,7 @@ export const paymentAPI = {
       const responseClone = response.clone()
       
       try {
-        console.log('📝 Attempting to parse error response as JSON...')
+        // console.log('📝 Attempting to parse error response as JSON...')
         const errorData = await response.json()
         console.error('✅ JSON Error Response Parsed:')
         console.error('- Status:', response.status, response.statusText)
@@ -121,7 +121,7 @@ export const paymentAPI = {
         const errorMessage = errorData.message || errorData.error || JSON.stringify(errorData)
         throw new Error(`API Error: ${errorMessage}`)
       } catch (parseError) {
-        console.log('❌ JSON parsing failed, trying text response...')
+        // console.log('❌ JSON parsing failed, trying text response...')
         console.error('Parse error:', parseError)
         
         try {
@@ -242,10 +242,10 @@ export const paymentSessionAPI = {
     memo: string,
     vendorWallet?: string
   }): Promise<PaymentSession> {
-    console.log('🔧 PAYMENT SESSION DEBUG:')
-    console.log('- API URL:', PAYMENT_SESSION_API_URL)
-    console.log('- Session Data:', JSON.stringify(sessionData, null, 2))
-    console.log('- Headers:', { 'Content-Type': 'application/json' })
+    // console.log('🔧 PAYMENT SESSION DEBUG:')
+    // console.log('- API URL:', PAYMENT_SESSION_API_URL)
+    // console.log('- Session Data:', JSON.stringify(sessionData, null, 2))
+    // console.log('- Headers:', { 'Content-Type': 'application/json' })
     
     const response = await fetch(PAYMENT_SESSION_API_URL, {
       method: 'POST',
@@ -253,10 +253,10 @@ export const paymentSessionAPI = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(sessionData),
-      credentials: 'include'
+      credentials: 'include' // Include auth cookies for vendor authentication //TODO check back
     })
     
-    console.log('- Response Status:', response.status, response.statusText)
+    // console.log('- Response Status:', response.status, response.statusText)
     
     if (!response.ok) {
       const errorText = await response.text()
@@ -269,7 +269,7 @@ export const paymentSessionAPI = {
     }
     
     const data = await response.json()
-    console.log('📝 Payment Session API Response:', JSON.stringify(data, null, 2))
+    // console.log('📝 Payment Session API Response:', JSON.stringify(data, null, 2))
     
     // Handle the new API response format with success field
     if (data.success === false) {
@@ -309,9 +309,9 @@ export const paymentSessionAPI = {
 
   // Get payment session status (public endpoint for customer payment pages)
   async getSessionStatus(sessionId: string): Promise<PaymentSession> {
-    console.log('🔍 SESSION STATUS DEBUG:')
-    console.log('- Session ID:', sessionId)
-    console.log('- API URL:', `${PAYMENT_SESSION_API_URL}/status/${sessionId}`)
+    // console.log('🔍 SESSION STATUS DEBUG:')
+    // console.log('- Session ID:', sessionId)
+    // console.log('- API URL:', `${PAYMENT_SESSION_API_URL}/status/${sessionId}`)
     
     const response = await fetch(`${PAYMENT_SESSION_API_URL}/status/${sessionId}`, {
       method: 'GET',
@@ -321,7 +321,7 @@ export const paymentSessionAPI = {
       // NOTE: No credentials for public customer access
     })
     
-    console.log('- Response Status:', response.status, response.statusText)
+    // console.log('- Response Status:', response.status, response.statusText)
     
     if (!response.ok) {
       const errorText = await response.text()
@@ -342,7 +342,7 @@ export const paymentSessionAPI = {
     }
     
     const data = await response.json()
-    console.log('- Session Data:', data)
+    // console.log('- Session Data:', data)
     
     if (data.success === false) {
       throw new Error(data.message || 'Failed to get session status')

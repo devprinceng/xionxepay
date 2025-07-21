@@ -18,13 +18,13 @@ export function Navigation() {
         const authSession = Cookies.get('auth_session')
         const token = Cookies.get('token')
         
-        console.log('🍪 Cookie Debug:', {
-          authSession,
-          token,
-          authSessionIsTrue: authSession === 'true',
-          tokenExists: !!token,
-          finalAuth: authSession === 'true' && !!token
-        })
+        // console.log('🍪 Cookie Debug:', {
+        //   authSession,
+        //   token,
+        //   authSessionIsTrue: authSession === 'true',
+        //   tokenExists: !!token,
+        //   finalAuth: authSession === 'true' && !!token
+        // })
         
         setIsAuthenticated(authSession === 'true' && !!token)
       } catch (error) {

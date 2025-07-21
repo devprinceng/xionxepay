@@ -1,25 +1,85 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { QRGenerator } from '@/components/ui/qr-generator'
-import { DollarSign, TrendingUp, Users, Wallet } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, Wallet, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { useXion } from '@/contexts/xion-context'
 import Cookies from 'js-cookie'
 import { useVendor } from '@/contexts/vendor-context'
+import { paymentAPI, Transaction } from '@/lib/payment-api'
+import { toast } from 'sonner'
 
 const VendorPage = () => {
+  const router = useRouter()
   const { isConnected } = useXion()
-  const { vendorProfile } = useVendor();
+  const { vendorProfile } = useVendor()
+  
+  // State for API data
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState([
+    { label: 'Total Sales', value: '$0.00', icon: DollarSign, change: '+0%' },
+    { label: 'Transactions', value: '0', icon: TrendingUp, change: '+0%' },
+    { label: 'Customers', value: '0', icon: Users, change: '+0%' },
+  ])
 
-  const stats = [
-    { label: 'Total Sales', value: '$2,450.00', icon: DollarSign, change: '+12%' },
-    { label: 'Transactions', value: '156', icon: TrendingUp, change: '+8%' },
-    { label: 'Customers', value: '89', icon: Users, change: '+15%' },
-  ]
+  // Fetch transactions and calculate stats
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!isConnected) return
+      
+      try {
+        setLoading(true)
+        const allTransactions = await paymentAPI.getAllTransactions()
+        // console.log('🔍 DEBUG: Transaction data structure:', allTransactions[0])
+        setTransactions(allTransactions)
+        
+        // Calculate stats from real data
+        const completedTransactions = allTransactions.filter(t => t.status === 'completed')
+        const totalSales = completedTransactions.reduce((sum, t) => sum + t.amount, 0)
+        const totalTransactions = allTransactions.length
+        
+        // Get unique customers (basic count based on customerEmail if available)
+        const uniqueCustomers = new Set(
+          allTransactions
+            .filter(t => t.customerEmail)
+            .map(t => t.customerEmail)
+        ).size
+        
+        setStats([
+          { 
+            label: 'Total Sales', 
+            value: `${totalSales.toFixed(6)}`, 
+            icon: DollarSign, 
+            change: '+0%' // TODO: Calculate month-over-month change
+          },
+          { 
+            label: 'Transactions', 
+            value: totalTransactions.toString(), 
+            icon: TrendingUp, 
+            change: '+0%' // TODO: Calculate month-over-month change
+          },
+          { 
+            label: 'Customers', 
+            value: uniqueCustomers.toString(), 
+            icon: Users, 
+            change: '+0%' // TODO: Calculate month-over-month change
+          },
+        ])
+      } catch (error) {
+        console.error('Failed to fetch transactions:', error)
+        toast.error('Failed to load transaction data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTransactions()
+  }, [isConnected])
 
   return (
     <div className="space-y-6">
@@ -75,7 +135,14 @@ const VendorPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-400 text-sm">{stat.label}</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                      {loading ? (
+                        <div className="flex items-center mt-1">
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+                          <p className="text-xl font-bold text-gray-400">Loading...</p>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                      )}
                       <p className="text-aurora-blue-400 text-sm mt-1">{stat.change} from last month</p>
                     </div>
                     <div className="bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 p-3 rounded-lg">
@@ -87,49 +154,83 @@ const VendorPage = () => {
             })}
           </motion.div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* QR Code Generator */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <QRGenerator onGenerate={(data) => console.log('QR Generated:', data)} />
-            </motion.div>
-
-            {/* Recent Transactions */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
+          {/* Recent Transactions - Full Width */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="max-w-4xl mx-auto"
+          >
               <Card className="p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
                 <div className="space-y-4">
-                  {[
-                    { id: '1', amount: '$25.00', description: 'Coffee & Pastry', time: '2 min ago', status: 'completed' },
-                    { id: '2', amount: '$15.50', description: 'Sandwich', time: '15 min ago', status: 'completed' },
-                    { id: '3', amount: '$8.75', description: 'Tea', time: '1 hour ago', status: 'completed' },
-                  ].map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                      <div>
-                        <p className="text-white font-medium">{transaction.description}</p>
-                        <p className="text-gray-400 text-sm">{transaction.time}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-aurora-blue-400 font-bold">{transaction.amount}</p>
-                        <p className="text-green-400 text-sm capitalize">{transaction.status}</p>
-                      </div>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-gray-400 mr-2" />
+                      <p className="text-gray-400">Loading transactions...</p>
                     </div>
-                  ))}
+                  ) : transactions.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 mb-2">No transactions yet</p>
+                      <p className="text-gray-500 text-sm">Your recent transactions will appear here</p>
+                    </div>
+                  ) : (
+                    transactions.slice(0, 3).map((transaction) => {
+                      const getStatusColor = (status: string) => {
+                        switch (status) {
+                          case 'completed': return 'text-green-400'
+                          case 'pending': return 'text-yellow-400'
+                          case 'processing': return 'text-blue-400'
+                          case 'failed': return 'text-red-400'
+                          case 'expired': return 'text-gray-400'
+                          default: return 'text-gray-400'
+                        }
+                      }
+                      
+                      const formatTime = (dateString: string) => {
+                        if (!dateString) return 'Unknown'
+                        
+                        const date = new Date(dateString)
+                        if (isNaN(date.getTime())) return 'Invalid date'
+                        
+                        const now = new Date()
+                        const diffMs = now.getTime() - date.getTime()
+                        const diffMins = Math.floor(diffMs / (1000 * 60))
+                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+                        
+                        if (diffMs < 0) return 'In the future'
+                        if (diffMins < 1) return 'Just now'
+                        if (diffMins < 60) return `${diffMins} min ago`
+                        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+                        if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+                        return date.toLocaleDateString()
+                      }
+                      
+                      return (
+                        <div key={transaction._id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
+                          <div>
+                            <p className="text-white font-medium">{transaction.description}</p>
+                            <p className="text-gray-400 text-sm">{formatTime((transaction as any).createdAt || (transaction as any).updatedAt)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-aurora-blue-400 font-bold">{transaction.amount.toFixed(6)}</p>
+                            <p className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>{transaction.status}</p>
+                          </div>
+                        </div>
+                      )
+                    })
+                  )}
                 </div>
-                <Button variant="outline" className="w-full mt-4">
+                <Button 
+                  variant="outline" 
+                  className="w-full mt-4"
+                  onClick={() => router.push('/vendor/transactions')}
+                >
                   View All Transactions
                 </Button>
               </Card>
-            </motion.div>
-          </div>
+          </motion.div>
         </>
       )}
     </div>

@@ -117,7 +117,7 @@ function ResetPasswordPageContent() {
         otp: values.otp,
         newPassword: values.password,
       }
-      console.log('Reset password payload:', payload)
+      // console.log('Reset password payload:', payload)
       await resetPassword(payload)
       setLoading(false)
       toast.success('Password reset successful! Please login.')

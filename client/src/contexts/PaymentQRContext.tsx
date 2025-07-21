@@ -374,14 +374,24 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
       // console.log('✅ Transaction created:', transaction)
       
       // Step 3: Create payment session using the transactionId from step 1
-      const session = await paymentSessionAPI.startPaymentSession({
+      const sessionData = {
         transactionId: transaction.transactionId,
         productId: productId,
         expectedAmount: amount,
         sessionId: sessionId,
         memo: structuredMemo,
         vendorWallet: vendorWallet || ''
+      }
+      
+      console.log('🔍 DEBUG: Payment session data being sent to API:', {
+        sessionData,
+        vendorWallet,
+        businessProfile,
+        vendorContext: vendorContext?.vendorProfile,
+        transaction
       })
+      
+      const session = await paymentSessionAPI.startPaymentSession(sessionData)
       
       // IMPORTANT: Use the sessionId we generated, not session._id from API
       // Create payment link URL using our generated sessionId for customer payment page
