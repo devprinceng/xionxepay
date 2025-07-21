@@ -93,9 +93,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Fetch all products for the authenticated vendor
   const fetchProducts = useCallback(async (): Promise<void> => {
     try {
-      // console.log('Fetching products...');
+      // // console.log('Fetching products...');
       const data = await api('/product', { method: 'GET' });
-      // console.log('Products data:', data);
+      // // console.log('Products data:', data);
       if (data && data.products) {
         setProducts(data.products);
       }
@@ -169,29 +169,29 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
       if (productData.category !== undefined) payload.category = productData.category
       if (productData.isActive !== undefined) payload.isActive = productData.isActive
       
-      console.log('🔧 UPDATE PRODUCT DEBUG:')
-      console.log('- Product ID:', productId)
-      console.log('- Product ID Type:', typeof productId)
-      console.log('- Product ID Length:', productId.length)
-      console.log('- Product Data Received:', JSON.stringify(productData, null, 2))
-      console.log('- Endpoint:', '/product/id')
-      console.log('- Full URL:', `${API_BASE_URL}/product/id`)
-      console.log('- Payload:', JSON.stringify(payload, null, 2))
-      console.log('- Request Headers:', { 'Content-Type': 'application/json' })
-      console.log('- Request Method:', 'PUT')
+      // console.log('🔧 UPDATE PRODUCT DEBUG:')
+      // console.log('- Product ID:', productId)
+      // console.log('- Product ID Type:', typeof productId)
+      // console.log('- Product ID Length:', productId.length)
+      // console.log('- Product Data Received:', JSON.stringify(productData, null, 2))
+      // console.log('- Endpoint:', '/product/id')
+      // console.log('- Full URL:', `${API_BASE_URL}/product/id`)
+      // console.log('- Payload:', JSON.stringify(payload, null, 2))
+      // console.log('- Request Headers:', { 'Content-Type': 'application/json' })
+      // console.log('- Request Method:', 'PUT')
       
       // Try the documented endpoint first, then fallback to /product/single if it fails
       let data;
       try {
-        console.log('🔄 Trying documented endpoint: /product/id')
+        // console.log('🔄 Trying documented endpoint: /product/id')
         data = await api('/product/id', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         })
       } catch (error) {
-        console.log('❌ /product/id failed, trying fallback: /product/single')
-        console.log('Error from /product/id:', error)
+        // console.log('❌ /product/id failed, trying fallback: /product/single')
+        // console.log('Error from /product/id:', error)
         
         // Fallback to the original endpoint
         data = await api('/product/single', {

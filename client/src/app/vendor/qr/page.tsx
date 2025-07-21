@@ -93,7 +93,7 @@ const QRPage = () => {
   useEffect(() => {
     const handlePaymentCompleted = (event: CustomEvent) => {
       const { transactionHash, txId } = event.detail
-      console.log('Payment completed event received:', { transactionHash, txId })
+      // console.log('Payment completed event received:', { transactionHash, txId })
       
       // Find the payment link with this txId and update its status
       const paymentLink = paymentLinks.find(link => {
@@ -117,10 +117,10 @@ const QRPage = () => {
       })
       
       if (paymentLink) {
-        console.log('Found matching payment link, updating status:', paymentLink)
+        // console.log('Found matching payment link, updating status:', paymentLink)
         updatePaymentLinkStatus(paymentLink.id, 'completed', transactionHash)
       } else {
-        console.log('Payment completed but no matching payment link found for txId:', txId)
+        // console.log('Payment completed but no matching payment link found for txId:', txId)
       }
     }
     
@@ -492,7 +492,7 @@ const QRPage = () => {
                       </div>
                       <div className="flex space-x-1">
                         {/* Payment status is now handled by the Xion payment gateway */}
-                        <Button 
+                        {/* <Button 
                           variant="ghost" 
                           size="sm"
                           onClick={() => deletePaymentLink(link.id)}
@@ -500,7 +500,7 @@ const QRPage = () => {
                           title="Delete payment link"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
                   </div>
