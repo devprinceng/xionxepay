@@ -18,10 +18,27 @@ export function ConditionalAuthProviders({ children }: ConditionalAuthProvidersP
   // Check if we're on a pay page (customer-facing, no auth required)
   const isPayPage = pathname?.startsWith('/pay/')
   
+  // Check if we're on auth pages (signin, register, verify-email, etc.)
+  const isAuthPage = pathname?.startsWith('/signin') || 
+                     pathname?.startsWith('/register') || 
+                     pathname?.startsWith('/verify-email') || 
+                     pathname?.startsWith('/forgot-password') || 
+                     pathname?.startsWith('/reset-password')
+  
   if (isPayPage) {
     // For pay pages: No vendor authentication providers, no protected route
     // Only basic functionality needed for customer payments
     return <>{children}</>
+  }
+  
+  if (isAuthPage) {
+    // For auth pages: Only AuthProvider, no VendorProvider or PaymentQRProvider
+    // This prevents session expiration redirects during auth flows
+    return (
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    )
   }
   
   // For all other pages: Include full vendor authentication stack

@@ -81,12 +81,12 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
   const [hasLoggedContext, setHasLoggedContext] = useState(false)
   useEffect(() => {
     if (!hasLoggedContext && vendorContext) {
-      console.log('🔍 Vendor context loaded in PaymentQR:', {
-        businessProfile: vendorContext?.businessProfile ? 'Available' : 'Not available',
-        businessName: vendorContext?.businessProfile?.businessName || 'Not available',
-        xionWalletAddress: vendorContext?.xionWalletAddress || 'Not available',
-        loading: vendorContext?.loading || false
-      })
+      // console.log('🔍 Vendor context loaded in PaymentQR:', {
+      //   businessProfile: vendorContext?.businessProfile ? 'Available' : 'Not available',
+      //   businessName: vendorContext?.businessProfile?.businessName || 'Not available',
+      //   xionWalletAddress: vendorContext?.xionWalletAddress || 'Not available',
+      //   loading: vendorContext?.loading || false
+      // })
       setHasLoggedContext(true)
     }
   }, [vendorContext, hasLoggedContext])
@@ -106,9 +106,9 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     const vendorName = vendorContext?.vendorProfile?.name
     
     if (!isLoading && !hasBusinessProfile && !vendorName) {
-      console.log('⚠️ Vendor profile not found. Please complete your profile setup in Settings.')
+      // console.log('⚠️ Vendor profile not found. Please complete your profile setup in Settings.')
     } else if (!isLoading && !hasBusinessProfile && vendorName) {
-      console.log('ℹ️ Using vendor name as business name fallback:', vendorName)
+      // console.log('ℹ️ Using vendor name as business name fallback:', vendorName)
     }
   }, [vendorContext?.businessProfile, vendorContext?.xionWalletAddress, vendorContext?.vendorProfile?.name, vendorContext?.loading, businessProfile, vendorWallet])
   
@@ -139,12 +139,12 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     const effectiveBusinessName = businessProfile?.businessName || vendorContext?.vendorProfile?.name || 'Not available'
     const currentState = `${effectiveBusinessName}-${vendorWallet || 'Not available'}`
     if (currentState !== lastLoggedState) {
-      console.log('Vendor context updated:', {
-        businessProfile: businessProfile?.businessName || 'Not set',
-        vendorNameFallback: vendorContext?.vendorProfile?.name || 'Not available',
-        effectiveBusinessName: effectiveBusinessName,
-        vendorWallet: vendorWallet || 'Not available'
-      })
+      // console.log('Vendor context updated:', {
+      //   businessProfile: businessProfile?.businessName || 'Not set',
+      //   vendorNameFallback: vendorContext?.vendorProfile?.name || 'Not available',
+      //   effectiveBusinessName: effectiveBusinessName,
+      //   vendorWallet: vendorWallet || 'Not available'
+      // })
       setLastLoggedState(currentState)
     }
   }, [businessProfile, vendorWallet, vendorContext?.vendorProfile?.name, lastLoggedState])
@@ -157,7 +157,7 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     const abstraxion = useAbstraxionSigningClient()
     xionClientAvailable = !!abstraxion.client
   } catch (error) {
-    console.log('Abstraxion client not available, continuing in offline mode')
+    // console.log('Abstraxion client not available, continuing in offline mode')
   }
   
   // Use the Xion wallet address if available
@@ -362,7 +362,7 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
       const VENDOR_BUSINESS_NAME = businessProfile?.businessName || vendorContext?.vendorProfile?.name || 'XionXEPay'
       const structuredMemo = `${APP_NAME}/${VENDOR_BUSINESS_NAME}/${productName}/${sessionId}`
       
-      console.log('📝 Creating transaction with structured memo:', structuredMemo)
+      // console.log('📝 Creating transaction with structured memo:', structuredMemo)
       
       // Step 2: Create transaction via /api/payment POST (description = memo)
       const transaction = await paymentAPI.createTransaction({
@@ -371,7 +371,7 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
         description: structuredMemo  // ← Use structured memo as description
       })
       
-      console.log('✅ Transaction created:', transaction)
+      // console.log('✅ Transaction created:', transaction)
       
       // Step 3: Create payment session using the transactionId from step 1
       const session = await paymentSessionAPI.startPaymentSession({
@@ -383,19 +383,10 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
         vendorWallet: vendorWallet || ''
       })
       
-      console.log('✅ Payment session created:', session)
-      
       // IMPORTANT: Use the sessionId we generated, not session._id from API
-      console.log('🔍 SESSION ID DEBUG:')
-      console.log('- Generated sessionId:', sessionId)
-      console.log('- Session._id from API:', session._id)
-      console.log('- Session.sessionId from API:', session.sessionId)
-      
       // Create payment link URL using our generated sessionId for customer payment page
       const baseUrl = process.env.NEXT_PUBLIC_PAYMENT_BASE_URL || window.location.origin
       const paymentLink = `${baseUrl}/pay/${sessionId}`  // Use our generated sessionId
-      
-      console.log('🔗 Payment link created:', paymentLink)
       
       // Generate QR code for the simplified payment link
       const qrCodeData = await QRCode.toDataURL(paymentLink, {
