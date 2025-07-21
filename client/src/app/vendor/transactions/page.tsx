@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { motion } from 'framer-motion'
 import { Search, Filter, Download, CheckCircle, Clock, XCircle, Loader2, X, ExternalLink } from 'lucide-react'
-import { transactionsAPI, Transaction } from '@/lib/payment-api'
+import { paymentAPI, Transaction } from '@/lib/payment-api'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -30,7 +30,7 @@ const TransactionsPage = () => {
       try {
         setIsLoading(true)
         setError(null)
-        const data = await transactionsAPI.getAllTransactions()
+        const data = await paymentAPI.getAllTransactions()
         setTransactions(data)
       } catch (err) {
         console.error('Failed to fetch transactions:', err)
@@ -206,9 +206,9 @@ const TransactionsPage = () => {
                 onClick={() => {
                   setIsLoading(true)
                   setError(null)
-                  transactionsAPI.getAllTransactions()
-                    .then(data => setTransactions(data))
-                    .catch(err => {
+                  paymentAPI.getAllTransactions()
+                    .then((data: Transaction[]) => setTransactions(data))
+                    .catch((err: any) => {
                       console.error('Failed to fetch transactions:', err)
                       setError('Failed to load transactions. Please try again later.')
                     })
@@ -227,60 +227,99 @@ const TransactionsPage = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800/50 border-b border-gray-700">
-                  <tr>
-                    <th className="text-left p-4 text-gray-400 font-medium">Transaction ID</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Description</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Customer</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Amount</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Status</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Time</th>
-                    <th className="text-left p-4 text-gray-400 font-medium">Hash</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((transaction) => (
-                    <tr 
-                      key={transaction._id} 
-                      className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors cursor-pointer" 
-                      onClick={() => {
-                        setSelectedTransaction(transaction)
-                        setIsModalOpen(true)
-                      }}
-                    >
-                      <td className="p-4">
-                        <span className="text-white font-mono text-sm">{transaction._id}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-white">{transaction.description}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-gray-300">{transaction.customer || 'N/A'}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-aurora-blue-400 font-bold">{transaction.formattedAmount || `${transaction.amount} XION`}</span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center space-x-2">
-                          {getStatusIcon(transaction.status)}
-                          <span className={`capitalize ${getStatusColor(transaction.status)}`}>
-                            {transaction.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-gray-400 text-sm">{transaction.time || new Date(transaction.transactionTime).toLocaleString()}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-gray-400 font-mono text-sm truncate max-w-[120px] inline-block">{transaction.transactionHash}</span>
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-800/50 border-b border-gray-700">
+                    <tr>
+                      <th className="text-left p-4 text-gray-400 font-medium">Transaction ID</th>
+                      <th className="text-left p-4 text-gray-400 font-medium">Description</th>
+                      <th className="text-left p-4 text-gray-400 font-medium">Amount</th>
+                      <th className="text-left p-4 text-gray-400 font-medium">Status</th>
+                      <th className="text-left p-4 text-gray-400 font-medium">Time</th>
+                      <th className="text-left p-4 text-gray-400 font-medium">Hash</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map((transaction) => (
+                      <tr 
+                        key={transaction._id} 
+                        className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors cursor-pointer" 
+                        onClick={() => {
+                          setSelectedTransaction(transaction)
+                          setIsModalOpen(true)
+                        }}
+                      >
+                        <td className="p-4">
+                          <span className="text-white font-mono text-sm truncate max-w-[120px] inline-block">{transaction._id}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-white">{transaction.description}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-aurora-blue-400 font-bold">{transaction.amount} XION</span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center space-x-2">
+                            {getStatusIcon(transaction.status)}
+                            <span className={`capitalize ${getStatusColor(transaction.status)}`}>
+                              {transaction.status}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-gray-400 text-sm">{new Date(transaction.transactionTime).toLocaleString()}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-gray-400 font-mono text-sm truncate max-w-[120px] inline-block">{transaction.transactionHash}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="lg:hidden space-y-4 p-4">
+                {filteredTransactions.map((transaction) => (
+                  <div 
+                    key={transaction._id}
+                    className="bg-gray-800 rounded-lg p-4 hover:bg-gray-750 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedTransaction(transaction)
+                      setIsModalOpen(true)
+                    }}
+                  >
+                    {/* Header Row */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h3 className="text-white font-medium truncate">{transaction.description}</h3>
+                        <p className="text-gray-400 text-sm font-mono truncate">{transaction._id}</p>
+                      </div>
+                      <div className="flex items-center space-x-2 ml-2">
+                        {getStatusIcon(transaction.status)}
+                        <span className={`capitalize text-sm ${getStatusColor(transaction.status)}`}>
+                          {transaction.status}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Amount and Time */}
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-aurora-blue-400 font-bold text-lg">{transaction.amount} XION</span>
+                      <span className="text-gray-400 text-sm">{new Date(transaction.transactionTime).toLocaleString()}</span>
+                    </div>
+                    
+                    {/* Transaction Hash */}
+                    <div className="border-t border-gray-700 pt-2">
+                      <p className="text-gray-500 text-xs mb-1">Transaction Hash</p>
+                      <p className="text-gray-400 font-mono text-sm truncate">{transaction.transactionHash}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </Card>
       </motion.div>
@@ -320,6 +359,16 @@ const TransactionsPage = () => {
                 <div className="space-y-2">
                   <p className="text-sm text-gray-400">Time</p>
                   <p className="text-white">{selectedTransaction.time || new Date(selectedTransaction.transactionTime).toLocaleString()}</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-400">Product</p>
+                  <p className="text-white">
+                    {typeof selectedTransaction.productId === 'object' && selectedTransaction.productId?.name 
+                      ? `${selectedTransaction.productId.name}${selectedTransaction.productId.price ? ` (${selectedTransaction.productId.price} XION)` : ''}` 
+                      : (typeof selectedTransaction.productId === 'string' ? selectedTransaction.productId : 'N/A')
+                    }
+                  </p>
                 </div>
                 
                 <div className="space-y-2">

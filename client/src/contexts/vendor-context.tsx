@@ -40,9 +40,26 @@ export type VendorContextType = {
 const VendorContext = createContext<VendorContextType | undefined>(undefined)
 
 export function VendorProvider({ children }: { children: React.ReactNode }) {
-  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null)
-  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null)
-  const [xionWalletAddress, setXionWalletAddress] = useState<string | null>(null)
+  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('vendorProfile')
+      return saved ? JSON.parse(saved) : null
+    }
+    return null
+  })
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('businessProfile')
+      return saved ? JSON.parse(saved) : null
+    }
+    return null
+  })
+  const [xionWalletAddress, setXionWalletAddress] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('xionWalletAddress')
+    }
+    return null
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -154,7 +171,7 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
       setError(err.message || 'Failed to update business profile')
       throw err
     }
-  }, [api])
+  }, [])
 
   // On mount, check login status
   React.useEffect(() => {
@@ -167,6 +184,37 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
   const updateXionWalletAddress = useCallback((address: string | null) => {
     setXionWalletAddress(address)
   }, [])
+
+  // Save to localStorage whenever data changes
+  React.useEffect(() => {
+    if (vendorProfile) {
+      localStorage.setItem('vendorProfile', JSON.stringify(vendorProfile))
+    } else {
+      localStorage.removeItem('vendorProfile')
+    }
+  }, [vendorProfile])
+
+  React.useEffect(() => {
+    if (businessProfile) {
+      localStorage.setItem('businessProfile', JSON.stringify(businessProfile))
+    } else {
+      localStorage.removeItem('businessProfile')
+    }
+  }, [businessProfile])
+
+  React.useEffect(() => {
+    if (xionWalletAddress) {
+      localStorage.setItem('xionWalletAddress', xionWalletAddress)
+    } else {
+      localStorage.removeItem('xionWalletAddress')
+    }
+  }, [xionWalletAddress])
+
+  // console.log(
+  //   vendorProfile,
+  //   businessProfile,
+  //   xionWalletAddress
+  // )
 
   const value: VendorContextType = {
     vendorProfile,
