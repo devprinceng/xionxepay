@@ -1,13 +1,40 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { QrCode, Wallet, BarChart3, Menu, X } from 'lucide-react'
+import { QrCode, Wallet, BarChart3, Menu, X, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function Navigation() {
-  const [isOpen, setIsOpen] = React.useState(false)
+  const [isOpen, setIsOpen] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Check authentication status from cookies
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const Cookies = (await import('js-cookie')).default
+        const authSession = Cookies.get('auth_session')
+        const token = Cookies.get('token')
+        
+        console.log('🍪 Cookie Debug:', {
+          authSession,
+          token,
+          authSessionIsTrue: authSession === 'true',
+          tokenExists: !!token,
+          finalAuth: authSession === 'true' && !!token
+        })
+        
+        setIsAuthenticated(authSession === 'true' && !!token)
+      } catch (error) {
+        console.error('Cookie check error:', error)
+        setIsAuthenticated(false)
+      }
+    }
+    
+    checkAuth()
+  }, [])
 
   const navItems = [
     // { href: '/', label: 'Home', icon: QrCode },
@@ -50,16 +77,27 @@ export function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link href="/signin">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-            </Link>
-            <Link href="/register">
-            <Button variant="gradient" size="sm">
-              Get Started
-            </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/vendor">
+                <Button variant="gradient" size="sm">
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/signin">
+                  <Button variant="ghost" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="gradient" size="sm">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -98,18 +136,27 @@ export function Navigation() {
               )
             })} */}
             <div className="pt-4 pb-2 space-y-2">
-            <Link href="/signin">
-            
-              <Button variant="ghost" className="w-full justify-start">
-                Sign In
-              </Button>
-            </Link>
-            <Link href="/register">
-            
-              <Button variant="gradient" className="w-full">
-                Get Started
-              </Button>
-            </Link>
+              {isAuthenticated ? (
+                <Link href="/vendor">
+                  <Button variant="gradient" className="w-full justify-start">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/signin">
+                    <Button variant="ghost" className="w-full justify-start">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button variant="gradient" className="w-full">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

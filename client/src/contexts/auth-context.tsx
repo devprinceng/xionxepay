@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 // Base URL for API calls
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Vendor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [initialized, setInitialized] = useState(false)
 
   // Helper for API calls
   const api = useCallback(async (endpoint: string, options: RequestInit) => {
@@ -127,6 +128,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(data),
     })
   }, [api])
+
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      if (initialized) return
+      
+      try {
+        // Check if auth cookies exist
+        const Cookies = (await import('js-cookie')).default
+        const authSession = Cookies.get('auth_session')
+        const token = Cookies.get('token')
+        
+        if (authSession === 'true' && token) {
+          // Try to fetch user profile to verify authentication
+          const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          
+          if (res.ok) {
+            const data = await res.json()
+            if (data.vendor) {
+              setUser(data.vendor)
+            }
+          }
+        }
+      } catch (error) {
+        // Silently handle errors - user remains logged out
+        console.error('Auth check failed:', error)
+      } finally {
+        setInitialized(true)
+      }
+    }
+    
+    checkAuthStatus()
+  }, [initialized])
 
   const value: AuthContextType = {
     user,
