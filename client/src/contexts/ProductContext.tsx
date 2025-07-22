@@ -157,49 +157,19 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Update an existing product
   const updateProduct = useCallback(async (productId: string, productData: Partial<Product>): Promise<Product | null> => {
     try {
-      // Create payload according to API docs - productId is required in body
-      const payload: Record<string, any> = {
-        productId // Required parameter according to API docs
-      }
+      // Create payload with only name and price as per requirements
+      const payload: Record<string, any> = {}
       
       // Add fields that can be updated
       if (productData.name !== undefined) payload.name = productData.name
       if (productData.price !== undefined) payload.price = productData.price
-      if (productData.description !== undefined) payload.description = productData.description
-      if (productData.category !== undefined) payload.category = productData.category
-      if (productData.isActive !== undefined) payload.isActive = productData.isActive
       
-      // console.log('🔧 UPDATE PRODUCT DEBUG:')
-      // console.log('- Product ID:', productId)
-      // console.log('- Product ID Type:', typeof productId)
-      // console.log('- Product ID Length:', productId.length)
-      // console.log('- Product Data Received:', JSON.stringify(productData, null, 2))
-      // console.log('- Endpoint:', '/product/id')
-      // console.log('- Full URL:', `${API_BASE_URL}/product/id`)
-      // console.log('- Payload:', JSON.stringify(payload, null, 2))
-      // console.log('- Request Headers:', { 'Content-Type': 'application/json' })
-      // console.log('- Request Method:', 'PUT')
-      
-      // Try the documented endpoint first, then fallback to /product/single if it fails
-      let data;
-      try {
-        // console.log('🔄 Trying documented endpoint: /product/id')
-        data = await api('/product/id', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      } catch (error) {
-        // console.log('❌ /product/id failed, trying fallback: /product/single')
-        // console.log('Error from /product/id:', error)
-        
-        // Fallback to the original endpoint
-        data = await api('/product/single', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-      }
+      // Send productId as URL parameter and name/price in request body
+      const data = await api(`/product/${productId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
       
       if (data && data.product) {
         // Update the product in the state
@@ -219,11 +189,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Delete a product
   const deleteProduct = useCallback(async (productId: string): Promise<boolean> => {
     try {
-      // According to API docs, DELETE /id requires productId in request body
-      const data = await api('/product/id', {
+      // Pass productId as URL parameter
+      const data = await api(`/product/${productId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        headers: { 'Content-Type': 'application/json' }
+        // No body needed as productId is in the URL
       })
       
       if (data && data.success) {
