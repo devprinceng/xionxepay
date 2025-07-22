@@ -43,14 +43,10 @@ export const createProduct = async (req: Request, res: Response): Promise<void> 
 }
 
 export const getProducts = async (req: Request, res: Response): Promise<void> => {
+    const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
+
     try {
-        const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-
-        if (!vendorId) {
-            res.status(401).json({ success: false, message: "Unauthorized" });
-            return;
-        }
-
+       
         const products = await Product.find({ vendorId: vendorId });
         res.status(200).json({ success: true, products: products });
     } catch (error) {
@@ -59,24 +55,22 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 }
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
+    const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
     const { productId } = req.params;
     if (!productId) {
         res.status(400).json({ success: false, message: "Product ID is required" });
         return;
     }
+    if (!vendorId) {
+        res.status(401).json({ success: false, message: "Unauthorized" });
+        return;
+    }
     try {
         
-        const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-
-        if (!vendorId) {
-            res.status(401).json({ success: false, message: "Unauthorized" });
-            return;
-        }
-
         const product = await Product.findOne({ _id: productId, vendorId: vendorId });
 
         if (!product) {
-            res.status(400).json({ success: false, message: "Product not found" });
+            res.status(200).json({ success: false, message: "Product not found" });
             return;
         }
 
@@ -88,21 +82,15 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
 
 export const updateProduct = async (req: Request, res: Response): Promise<void> => {
+     const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
      const { productId } = req.params;
+     const { name, price } = req.body;
+     
      if (!productId) {
         res.status(400).json({ success: false, message: "Product ID is required" });
         return;
     }
     try {
-       
-        const { name, price } = req.body;
-        const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-
-        if (!vendorId) {
-            res.status(401).json({ success: false, message: "Unauthorized" });
-            return;
-        }
-
         const product = await Product.findOneAndUpdate(
             { _id: productId, vendorId: vendorId },
             { name, price },
