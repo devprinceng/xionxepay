@@ -12,6 +12,7 @@ import Cookies from 'js-cookie'
 import { useVendor } from '@/contexts/vendor-context'
 import { paymentAPI, Transaction } from '@/lib/payment-api'
 import { toast } from 'sonner'
+import { MarketTrendWidget } from '@/components/dashboard/market-trend-widget'
 
 const VendorPage = () => {
   const router = useRouter()
@@ -24,7 +25,7 @@ const VendorPage = () => {
   const [stats, setStats] = useState([
     { label: 'Total Sales', value: '$0.00', icon: DollarSign, change: '+0%' },
     { label: 'Transactions', value: '0', icon: TrendingUp, change: '+0%' },
-    { label: 'Customers', value: '0', icon: Users, change: '+0%' },
+    // { label: 'Customers', value: '0', icon: Users, change: '+0%' },
   ])
 
   // Fetch transactions and calculate stats
@@ -63,12 +64,12 @@ const VendorPage = () => {
             icon: TrendingUp, 
             change: '+0%' // TODO: Calculate month-over-month change
           },
-          { 
-            label: 'Customers', 
-            value: uniqueCustomers.toString(), 
-            icon: Users, 
-            change: '+0%' // TODO: Calculate month-over-month change
-          },
+          // { 
+          //   label: 'Customers', 
+          //   value: uniqueCustomers.toString(), 
+          //   icon: Users, 
+          //   change: '+0%' // TODO: Calculate month-over-month change
+          // },
         ])
       } catch (error) {
         console.error('Failed to fetch transactions:', error)
@@ -143,7 +144,7 @@ const VendorPage = () => {
                       ) : (
                         <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
                       )}
-                      <p className="text-aurora-blue-400 text-sm mt-1">{stat.change} from last month</p>
+                      {/* <p className="text-aurora-blue-400 text-sm mt-1">{stat.change} from last month</p> */}
                     </div>
                     <div className="bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 p-3 rounded-lg">
                       <Icon className="w-6 h-6 text-white" />
@@ -154,82 +155,86 @@ const VendorPage = () => {
             })}
           </motion.div>
 
-          {/* Recent Transactions - Full Width */}
+          {/* Recent Transactions and Market Trend */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="max-w-4xl mx-auto"
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
           >
-              <Card className="p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
-                <div className="space-y-4">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-gray-400 mr-2" />
-                      <p className="text-gray-400">Loading transactions...</p>
+           
+            
+            {/* Market Trend Widget - Takes 1/3 of the space */}
+            <div className="lg:col-span-1">
+              <MarketTrendWidget />
+            </div>
+
+             {/* Recent Transactions - Takes 2/3 of the space */}
+             <div className="lg:col-span-2 max-w-lg">
+              <Card className="bg-gray-800/50 p-6 rounded-xl overflow-hidden h-full">
+                <h3 className="text-lg font-semibold text-white mb-4">Recent Transactions</h3>
+                
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-aurora-blue-500 animate-spin" />
+                  </div>
+                ) : transactions.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-gray-400 text-sm">
+                          <th className="pb-3">Date</th>
+                          <th className="pb-3">Amount</th>
+                          <th className="pb-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.slice(0, 5).map((transaction, index) => (
+                          <tr key={transaction._id || index} className="border-t border-gray-700/50">
+                            <td className="py-3 text-white">
+                              {new Date((transaction as any).createdAt || Date.now()).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 text-white">
+                              {transaction.amount.toFixed(6)} XION
+                            </td>
+                            <td className="py-3">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                transaction.status === 'completed' ? 'bg-green-900/30 text-green-400' :
+                                transaction.status === 'pending' ? 'bg-yellow-900/30 text-yellow-400' :
+                                'bg-red-900/30 text-red-400'
+                              }`}>
+                                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    
+                    <div className="mt-4 text-center">
+                      <Button 
+                        variant="ghost" 
+                        className="text-aurora-blue-400 hover:text-aurora-blue-300"
+                        onClick={() => router.push('/vendor/transactions')}
+                      >
+                        View All Transactions
+                      </Button>
                     </div>
-                  ) : transactions.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-gray-400 mb-2">No transactions yet</p>
-                      <p className="text-gray-500 text-sm">Your recent transactions will appear here</p>
-                    </div>
-                  ) : (
-                    transactions.slice(0, 3).map((transaction) => {
-                      const getStatusColor = (status: string) => {
-                        switch (status) {
-                          case 'completed': return 'text-green-400'
-                          case 'pending': return 'text-yellow-400'
-                          case 'processing': return 'text-blue-400'
-                          case 'failed': return 'text-red-400'
-                          case 'expired': return 'text-gray-400'
-                          default: return 'text-gray-400'
-                        }
-                      }
-                      
-                      const formatTime = (dateString: string) => {
-                        if (!dateString) return 'Unknown'
-                        
-                        const date = new Date(dateString)
-                        if (isNaN(date.getTime())) return 'Invalid date'
-                        
-                        const now = new Date()
-                        const diffMs = now.getTime() - date.getTime()
-                        const diffMins = Math.floor(diffMs / (1000 * 60))
-                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-                        
-                        if (diffMs < 0) return 'In the future'
-                        if (diffMins < 1) return 'Just now'
-                        if (diffMins < 60) return `${diffMins} min ago`
-                        if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-                        if (diffDays < 30) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
-                        return date.toLocaleDateString()
-                      }
-                      
-                      return (
-                        <div key={transaction._id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                          <div>
-                            <p className="text-white font-medium">{transaction.description}</p>
-                            <p className="text-gray-400 text-sm">{formatTime((transaction as any).createdAt || (transaction as any).updatedAt)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-aurora-blue-400 font-bold">{transaction.amount.toFixed(6)}</p>
-                            <p className={`text-sm capitalize ${getStatusColor(transaction.status)}`}>{transaction.status}</p>
-                          </div>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4"
-                  onClick={() => router.push('/vendor/transactions')}
-                >
-                  View All Transactions
-                </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 mb-4">No transactions yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="border-aurora-blue-500 text-aurora-blue-400 hover:bg-aurora-blue-500/10"
+                      onClick={() => router.push('/vendor/qr')}
+                    >
+                      Create Payment QR
+                    </Button>
+                  </div>
+                )}
               </Card>
+            </div>
           </motion.div>
         </>
       )}

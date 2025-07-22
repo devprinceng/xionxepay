@@ -134,11 +134,33 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
   // Update business profile (with logo upload)
   const updateBusinessProfile = useCallback(async (profile: Partial<BusinessProfile>) => {
     const formData = new FormData()
+    
+    // Ensure all required fields are included in the request
+    const requiredFields = [
+      'businessName', 'businessDescription', 'category',
+      'address', 'city', 'state', 'country', 'zip'
+    ]
+    
+    // Add all fields to FormData
     Object.entries(profile).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        formData.append(key, value as any)
+        // If this is the logo file, ensure it's named 'logo' in the request
+        if (key === 'logo' && typeof value === 'object' && value !== null) {
+          formData.append('logo', value)
+        } else {
+          formData.append(key, value as any)
+        }
       }
     })
+    
+    // Add any missing required fields from the current businessProfile
+    if (businessProfile) {
+      requiredFields.forEach(field => {
+        if (!formData.has(field) && businessProfile[field as keyof BusinessProfile]) {
+          formData.append(field, businessProfile[field as keyof BusinessProfile] as string)
+        }
+      })
+    }
     
     setLoading(true)
     setError(null)
@@ -147,6 +169,7 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch(url, {
         method: 'PUT',
         body: formData,
+        // Don't set Content-Type header - browser will set it with boundary for multipart/form-data
         credentials: 'include',
       })
       
@@ -164,14 +187,14 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
       }
       
       setLoading(false)
-      setBusinessProfile(data.vendor)
+      setBusinessProfile(data.businessProfile || data.vendor)
       return data
     } catch (err: any) {
       setLoading(false)
       setError(err.message || 'Failed to update business profile')
       throw err
     }
-  }, [])
+  }, [businessProfile])
 
   // On mount, check login status
   React.useEffect(() => {

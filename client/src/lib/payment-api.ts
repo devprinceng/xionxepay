@@ -373,13 +373,13 @@ export const paymentSessionAPI = {
   },
 
   // Complete payment session
-  async completeSession(sessionId: string, transactionHash: string): Promise<PaymentSession> {
+  async completeSession(sessionId: string, transactionHash: string, status: string = 'completed'): Promise<PaymentSession> {
     const response = await fetch(`${PAYMENT_SESSION_API_URL}/complete`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ sessionId, transactionHash })
+      body: JSON.stringify({ sessionId, transactionHash, status })
     })
     
     const data = await response.json()

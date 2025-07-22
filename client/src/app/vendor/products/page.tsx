@@ -309,7 +309,7 @@ const ProductsPage = () => {
                 <div className="flex items-center space-x-2">
 
                   {/* //TODO fix eidt and delete button */}
-                  {/* <button
+                  <button
                     onClick={() => handleEdit(product)}
                     className="p-1 text-gray-400 hover:text-aurora-blue-400 transition-colors"
                   >
@@ -323,7 +323,7 @@ const ProductsPage = () => {
                     className="p-1 text-gray-400 hover:text-red-400 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </button> */}
+                  </button>
                 </div>
               </div>
               

@@ -12,7 +12,7 @@ import { ArrowLeft, CheckCircle, XCircle, Loader2, Clock, Wallet, Download } fro
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { coins } from '@cosmjs/proto-signing'
-import { paymentSessionAPI } from '@/lib/payment-api'
+import { paymentSessionAPI, paymentAPI } from '@/lib/payment-api'
 
 function PaymentPageContent() {
   const params = useParams()
@@ -383,7 +383,24 @@ function PaymentPageContent() {
       // Complete the payment session using the Payment Session API
       try {
         if (currentSessionId) {
-          await paymentSessionAPI.completeSession(currentSessionId, transactionHash)
+          // Send sessionId, transactionHash, and status in the request body
+          const sessionResponse = await paymentSessionAPI.completeSession(currentSessionId, transactionHash, 'completed')
+          
+          // Update the transaction with the transaction ID from the session response
+          if (sessionResponse && sessionResponse.transactionId) {
+            try {
+              // Send PUT request to update the transaction
+              await paymentAPI.updateTransaction(
+                sessionResponse.transactionId,
+                'completed',
+                transactionHash
+              )
+              console.log('Transaction updated successfully')
+            } catch (txError) {
+              console.error('Failed to update transaction:', txError)
+              // Continue anyway as the blockchain transaction and session were successful
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to complete payment session:', error)
