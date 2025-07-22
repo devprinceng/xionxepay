@@ -1,44 +1,47 @@
 import mongoose from "mongoose";
 
 export interface PaymentSession extends mongoose.Document {
-  sessionId:{ type: string; unique: true };
-  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true };
-  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }; // Product ID
+  sessionId: string;
+  vendorId: mongoose.Types.ObjectId;
+  productId: mongoose.Types.ObjectId;
   customerEmail?: string;
-  vendorWallet?:string;
+  vendorWallet?: string;
   expectedAmount: string;
-  status: "pending" | "completed" | "failed"| "expired";
+  status: "pending" | "completed" | "failed" | "expired";
   txHash?: string;
+  transactionId?: string;
   createdAt: Date;
   expiresAt: Date;
 }
 
-const paymentSessionSchema = new mongoose.Schema({
+const paymentSessionSchema = new mongoose.Schema<PaymentSession>({
   sessionId: { type: String, unique: true, required: true },
   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true },
-  vendorWallet: { type: String, required: true }, // Vendor's wallet address
-  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }, // Product ID
-  customerEmail:{ type: String, sparse: true }, // Optional customer email for notifications
-  expectedAmount: String,
+  vendorWallet: { type: String, required: true },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
+  customerEmail: { type: String }, // no sparse here
+  expectedAmount: { type: String, required: true },
   status: {
     type: String,
     enum: ["pending", "completed", "failed", "expired"],
     default: "pending",
   },
-  transactionId: { type: String, unique: true,}, 
-  txHash: { type: String, sparse:true},
+  transactionId: { type: String, unique: true, sparse: true },
+  txHash: { type: String }, // no index here
   createdAt: { type: Date, default: Date.now },
-  expiresAt: Date,
+  expiresAt: { type: Date },
 });
 
-paymentSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 }); // Automatically delete expired sessions after 24 hours
+// Indexes
+paymentSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 });
 paymentSessionSchema.index({ txHash: 1 }, { unique: true, sparse: true });
-paymentSessionSchema.pre<PaymentSession>("save", function (next) {
+
+paymentSessionSchema.pre("save", function (next) {
   if (!this.expiresAt) {
-    this.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Set timeout to 10 minutes by default
+    this.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min default
   }
   next();
 });
 
-const PaymentSession = mongoose.model("PaymentSession", paymentSessionSchema);
+const PaymentSession = mongoose.model<PaymentSession>("PaymentSession", paymentSessionSchema);
 export { PaymentSession };
