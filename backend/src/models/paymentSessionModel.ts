@@ -26,12 +26,13 @@ const paymentSessionSchema = new mongoose.Schema({
     default: "pending",
   },
   transactionId: { type: String, unique: true,}, 
-  txHash: { type: String, unique: true , sparse:true},
+  txHash: { type: String, sparse:true},
   createdAt: { type: Date, default: Date.now },
   expiresAt: Date,
 });
 
 paymentSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 86400 }); // Automatically delete expired sessions after 24 hours
+paymentSessionSchema.index({ txHash: 1 }, { unique: true, sparse: true });
 paymentSessionSchema.pre<PaymentSession>("save", function (next) {
   if (!this.expiresAt) {
     this.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // Set timeout to 10 minutes by default
