@@ -459,6 +459,7 @@ const QRPage = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center">
                         <p className="font-medium truncate">{link.amount} XION</p>
+                        {/* <p className="font-medium truncate mr-4 text-blue-600">{link.status}</p> */}
                         
                       </div>
                       <p className="text-sm text-gray-400 truncate">{link.productName || getProductName(link.productId)}</p>

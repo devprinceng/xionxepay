@@ -383,12 +383,32 @@ function PaymentPageContent() {
       // Complete the payment session using the Payment Session API
       try {
         if (currentSessionId) {
+          console.log('Completing payment session with:', { 
+            sessionId: currentSessionId, 
+            transactionHash, 
+            status: 'completed' 
+          })
+          
           // Send sessionId, transactionHash, and status in the request body
-          const sessionResponse = await paymentSessionAPI.completeSession(currentSessionId, transactionHash, 'completed')
+          const sessionResponse = await paymentSessionAPI.completeSession(
+            currentSessionId, 
+            transactionHash, 
+            'completed'
+          )
+          
+          console.log('Session completion response:', sessionResponse)
           
           // Update the transaction with the transaction ID from the session response
           if (sessionResponse && sessionResponse.transactionId) {
             try {
+              const transactionUpdateData = {
+                status: 'completed',
+                transactionId: sessionResponse.transactionId,
+                transactionHash
+              }
+              
+              console.log('Updating transaction with:', transactionUpdateData)
+              
               // Send PUT request to update the transaction
               await paymentAPI.updateTransaction(
                 sessionResponse.transactionId,
@@ -400,6 +420,8 @@ function PaymentPageContent() {
               console.error('Failed to update transaction:', txError)
               // Continue anyway as the blockchain transaction and session were successful
             }
+          } else {
+            console.error('Missing transactionId in session response:', sessionResponse)
           }
         }
       } catch (error) {
