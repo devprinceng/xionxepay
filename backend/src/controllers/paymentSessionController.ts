@@ -127,7 +127,7 @@ export const completePaymentSession = async (req: Request, res: Response) => {
   }
    const vendorBusinessLogo = vendor.logo;
   if (!vendorBusinessLogo) {
-    res.status(404).json({ success: false, message: 'Vendor business logo not found' });
+    res.status(404).json({ success: false, message: 'Vendor business  not found' });
     return;
   }
   await paymentSuccessEmailVendor(

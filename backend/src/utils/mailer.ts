@@ -271,7 +271,7 @@ const paymentSuccessEmailTemplate = (
   amount: string
 ): EmailTemplateOptions => ({
   from: process.env.EMAIL_FROM || '',
-  to: email,
+  to: email === "" ? process.env.EMAIL_FROM || "" : email,
   subject: `Payment Success for ${process.env.APP_NAME}`,
   text: `Hello,
 
