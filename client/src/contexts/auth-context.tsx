@@ -85,7 +85,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       body: JSON.stringify(data),
     })
-    if (res.vendor) setUser(res.vendor)
+
+    if (res.vendor) {
+      setUser(res.vendor)
+
+      // Dispatch auth change event for navbar
+      window.dispatchEvent(new CustomEvent('auth-change'))
+    }
+
     return res
   }, [api])
 
@@ -93,9 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' })
     setUser(null)
-    // Clear Xion wallet cookie
+
+    // Clear wallet address cookie
     const Cookies = (await import('js-cookie')).default
     Cookies.remove('xion_address')
+
+    // Dispatch auth change event for navbar
+    window.dispatchEvent(new CustomEvent('auth-change'))
   }, [api])
 
   // Send verify OTP
@@ -135,12 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (initialized) return
       
       try {
-        // Check if auth cookies exist
+        // Check if token cookie exists
         const Cookies = (await import('js-cookie')).default
-        const authSession = Cookies.get('auth_session')
         const token = Cookies.get('token')
-        
-        if (authSession === 'true' && token) {
+
+        if (token) {
           // Try to fetch user profile to verify authentication
           const res = await fetch(`${API_BASE_URL}/auth/profile`, {
             method: 'GET',
@@ -149,7 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               'Content-Type': 'application/json',
             },
           })
-          
+
           if (res.ok) {
             const data = await res.json()
             if (data.vendor) {

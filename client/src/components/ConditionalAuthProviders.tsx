@@ -17,12 +17,15 @@ export function ConditionalAuthProviders({ children }: ConditionalAuthProvidersP
   
   // Check if we're on a pay page (customer-facing, no auth required)
   const isPayPage = pathname?.startsWith('/pay/')
-  
+
+  // Check if we're on the home page (public, no auth required)
+  const isHomePage = pathname === '/'
+
   // Check if we're on auth pages (signin, register, verify-email, etc.)
-  const isAuthPage = pathname?.startsWith('/signin') || 
-                     pathname?.startsWith('/register') || 
-                     pathname?.startsWith('/verify-email') || 
-                     pathname?.startsWith('/forgot-password') || 
+  const isAuthPage = pathname?.startsWith('/signin') ||
+                     pathname?.startsWith('/register') ||
+                     pathname?.startsWith('/verify-email') ||
+                     pathname?.startsWith('/forgot-password') ||
                      pathname?.startsWith('/reset-password')
   
   if (isPayPage) {
@@ -30,7 +33,17 @@ export function ConditionalAuthProviders({ children }: ConditionalAuthProvidersP
     // Only basic functionality needed for customer payments
     return <>{children}</>
   }
-  
+
+  if (isHomePage) {
+    // For home page: Include AuthProvider for navbar state but no protection
+    // This allows the navbar to show login/logout states without requiring auth
+    return (
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    )
+  }
+
   if (isAuthPage) {
     // For auth pages: Only AuthProvider, no VendorProvider or PaymentQRProvider
     // This prevents session expiration redirects during auth flows
