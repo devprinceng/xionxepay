@@ -79,6 +79,7 @@ export interface PaymentLink {
   transactionId: string
   txHash: string
   transactionHash?: string
+  expiresAt?: string // Add expiration timestamp
 }
 
 // Payment API
@@ -396,13 +397,56 @@ export const paymentSessionAPI = {
     const response = await fetch(`${PAYMENT_SESSION_API_URL}/active`, {
       credentials: 'include' // Include auth cookies
     })
-    
+
     const data = await response.json()
-    
+
     if (!data.success) {
       throw new Error(data.message || 'Failed to get active sessions')
     }
-    
+
     return data.sessions
+  },
+
+  // Get recent sessions for vendor (all statuses, limited to recent ones)
+  async getRecentSessions(limit: number = 5): Promise<PaymentSession[]> {
+    try {
+      // First try the recent endpoint
+      const response = await fetch(`${PAYMENT_SESSION_API_URL}/recent?limit=${limit}`, {
+        credentials: 'include' // Include auth cookies
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.sessions) {
+        return data.sessions
+      }
+    } catch (error) {
+      console.warn('Recent sessions endpoint not available, trying alternative approach')
+    }
+
+    try {
+      // Fallback: Get all sessions and filter/sort on frontend
+      const response = await fetch(`${PAYMENT_SESSION_API_URL}`, {
+        credentials: 'include' // Include auth cookies
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.sessions) {
+        // Sort by creation date (newest first) and limit to recent ones
+        const sortedSessions = data.sessions
+          .sort((a: PaymentSession, b: PaymentSession) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )
+          .slice(0, limit)
+
+        return sortedSessions
+      }
+    } catch (error) {
+      console.warn('All sessions endpoint failed, falling back to active sessions')
+    }
+
+    // Final fallback to active sessions
+    return this.getActiveSessions()
   },
 }

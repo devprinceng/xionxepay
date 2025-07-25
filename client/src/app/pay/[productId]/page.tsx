@@ -13,6 +13,8 @@ import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { coins } from '@cosmjs/proto-signing'
 import { paymentSessionAPI, paymentAPI } from '@/lib/payment-api'
+import { EnhancedReceipt } from '@/components/ui/enhanced-receipt'
+import { EnhancedReceiptGenerator } from '@/utils/receipt-generator'
 
 function PaymentPageContent() {
   const params = useParams()
@@ -108,25 +110,57 @@ function PaymentPageContent() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
   }
   
-  // Initialize and run the timer
+  // Initialize and run the timer with periodic server sync
   useEffect(() => {
     // Only run the timer if payment is pending
-    if (paymentStatus !== 'pending') return
-    
+    if (paymentStatus !== 'pending' || !sessionData) return
+
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          setPaymentStatus('expired')
-          return 0
-        }
-        return prev - 1
-      })
+      // Calculate remaining time based on server expiresAt timestamp
+      const expiresAt = new Date(sessionData.expiresAt).getTime()
+      const now = Date.now()
+      const remainingMs = expiresAt - now
+
+      if (remainingMs <= 0) {
+        clearInterval(timer)
+        setPaymentStatus('expired')
+        setTimeRemaining(0)
+        setTimerProgress(0)
+      } else {
+        const remainingSeconds = Math.floor(remainingMs / 1000)
+        setTimeRemaining(remainingSeconds)
+      }
     }, 1000)
-    
-    // Clean up the timer
-    return () => clearInterval(timer)
-  }, [paymentStatus])
+
+    // Also periodically check server status to handle edge cases
+    const statusChecker = setInterval(async () => {
+      try {
+        const sessionResponse = await paymentSessionAPI.getSessionStatus(sessionId)
+        if (sessionResponse && sessionResponse.status !== paymentStatus) {
+          if (sessionResponse.status === 'expired') {
+            setPaymentStatus('expired')
+            setTimeRemaining(0)
+            setTimerProgress(0)
+          } else if (sessionResponse.status === 'completed') {
+            setPaymentStatus('completed')
+            if (sessionResponse.txHash) {
+              setTransactionHash(sessionResponse.txHash)
+            } else if (sessionResponse.transactionHash) {
+              setTransactionHash(sessionResponse.transactionHash)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session status:', error)
+      }
+    }, 30000) // Check every 30 seconds
+
+    // Clean up the timers
+    return () => {
+      clearInterval(timer)
+      clearInterval(statusChecker)
+    }
+  }, [paymentStatus, sessionData, sessionId])
   
   // Update progress bar
   useEffect(() => {
@@ -167,173 +201,28 @@ function PaymentPageContent() {
   // We use the XionContext isConnected state and verify we have all required components
   const isWalletAuthenticated = isConnected && accountConnected && walletAddress && xionClient
   
-  // Download transaction receipt as image using native Canvas API
-  const downloadReceipt = () => {
+  // Download transaction receipt using enhanced receipt generator
+  const downloadReceipt = async () => {
     if (!transactionHash || !sessionData) {
       toast.error('Transaction data not available')
       return
     }
-    
-    // Create canvas for receipt
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    if (!ctx) {
-      toast.error('Canvas not supported')
-      return
+
+    try {
+      const receiptGenerator = new EnhancedReceiptGenerator()
+      await receiptGenerator.downloadReceipt({
+        transactionHash,
+        amount,
+        productName: description,
+        sessionId: currentSessionId,
+        timestamp: new Date().toISOString(),
+        recipientAddress: recipient,
+        vendorName: 'XionxePay Vendor'
+      })
+    } catch (error) {
+      console.error('Failed to download receipt:', error)
+      toast.error('Failed to generate receipt')
     }
-    
-    // Set canvas dimensions
-    canvas.width = 400
-    canvas.height = 600
-    
-    // Set background
-    ctx.fillStyle = '#ffffff'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-    
-    // Helper function to draw text
-    const drawText = (text: string, x: number, y: number, font: string, color: string = '#000000', align: CanvasTextAlign = 'left') => {
-      ctx.font = font
-      ctx.fillStyle = color
-      ctx.textAlign = align
-      ctx.fillText(text, x, y)
-    }
-    
-    // Helper function to draw wrapped text
-    const drawWrappedText = (text: string, x: number, y: number, maxWidth: number, font: string, color: string = '#000000') => {
-      ctx.font = font
-      ctx.fillStyle = color
-      ctx.textAlign = 'left'
-      
-      const words = text.split(' ')
-      let line = ''
-      let currentY = y
-      
-      for (let n = 0; n < words.length; n++) {
-        const testLine = line + words[n] + ' '
-        const metrics = ctx.measureText(testLine)
-        const testWidth = metrics.width
-        
-        if (testWidth > maxWidth && n > 0) {
-          ctx.fillText(line, x, currentY)
-          line = words[n] + ' '
-          currentY += 16
-        } else {
-          line = testLine
-        }
-      }
-      ctx.fillText(line, x, currentY)
-      return currentY + 16
-    }
-    
-    let y = 40
-    
-    // Header
-    drawText('XionXEPay', canvas.width / 2, y, 'bold 24px Arial', '#059669', 'center')
-    y += 30
-    drawText('Payment Receipt', canvas.width / 2, y, '14px Arial', '#6b7280', 'center')
-    y += 40
-    
-    // Draw top border
-    ctx.strokeStyle = '#059669'
-    ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(20, y)
-    ctx.lineTo(380, y)
-    ctx.stroke()
-    y += 20
-    
-    // Status
-    drawText('Status:', 30, y, 'bold 14px Arial')
-    drawText('✓ Completed', 370, y, 'bold 14px Arial', '#059669', 'right')
-    y += 25
-    
-    // Amount
-    drawText('Amount:', 30, y, 'bold 14px Arial')
-    drawText(`${amount} XION`, 370, y, 'bold 18px Arial', '#000000', 'right')
-    y += 25
-    
-    // Description
-    drawText('Description:', 30, y, 'bold 14px Arial')
-    drawText(description.length > 20 ? description.substring(0, 20) + '...' : description, 370, y, '14px Arial', '#000000', 'right')
-    y += 25
-    
-    // Date
-    drawText('Date:', 30, y, 'bold 14px Arial')
-    drawText(new Date().toLocaleDateString(), 370, y, '14px Arial', '#000000', 'right')
-    y += 20
-    
-    // Draw bottom border
-    ctx.beginPath()
-    ctx.moveTo(20, y)
-    ctx.lineTo(380, y)
-    ctx.stroke()
-    y += 30
-    
-    // Transaction Hash
-    drawText('Transaction Hash:', 30, y, 'bold 12px Arial', '#6b7280')
-    y += 20
-    
-    // Draw background for hash
-    ctx.fillStyle = '#f3f4f6'
-    ctx.fillRect(20, y - 15, 360, 40)
-    
-    // Split hash into multiple lines if needed
-    const hashParts = transactionHash.match(/.{1,50}/g) || [transactionHash]
-    hashParts.forEach((part, index) => {
-      drawText(part, 25, y + (index * 16), '10px monospace', '#000000')
-    })
-    y += (hashParts.length * 16) + 20
-    
-    // Recipient
-    drawText('Recipient:', 30, y, 'bold 12px Arial', '#6b7280')
-    y += 20
-    
-    // Draw background for recipient
-    ctx.fillStyle = '#f3f4f6'
-    ctx.fillRect(20, y - 15, 360, 40)
-    
-    // Split recipient into multiple lines if needed
-    const recipientParts = recipient.match(/.{1,50}/g) || [recipient]
-    recipientParts.forEach((part: string, index: number) => {
-      drawText(part, 25, y + (index * 16), '10px monospace', '#000000')
-    })
-    y += (recipientParts.length * 16) + 30
-    
-    // Session info
-    drawText(`Session ID: ${currentSessionId}`, 30, y, '12px Arial', '#6b7280')
-    y += 20
-    drawText('Powered by Xion Blockchain', 30, y, '12px Arial', '#6b7280')
-    y += 30
-    
-    // Footer line
-    ctx.strokeStyle = '#e5e7eb'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(20, y)
-    ctx.lineTo(380, y)
-    ctx.stroke()
-    y += 20
-    
-    // Footer text
-    drawText('This receipt confirms your payment on the Xion network', canvas.width / 2, y, '10px Arial', '#9ca3af', 'center')
-    
-    // Convert canvas to blob and download
-    canvas.toBlob((blob) => {
-      if (blob) {
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `xionxepay-receipt-${transactionHash.substring(0, 8)}.png`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-        
-        toast.success('Receipt downloaded successfully!')
-      } else {
-        toast.error('Failed to generate receipt')
-      }
-    }, 'image/png')
   }
   
   // Process payment
@@ -372,7 +261,7 @@ function PaymentPageContent() {
         recipient,
         coins(amountInUxion, "uxion"),
         "auto", // Use auto for gasless transactions on Xion
-        description || "Payment via XionXEPay"
+        description || "Payment via XionxePay"
       )
       
       // Get the transaction hash from the result
@@ -476,9 +365,28 @@ function PaymentPageContent() {
     )
   }
 
+  // Show full-width success page when payment is completed
+  if (paymentStatus === 'completed' && transactionHash) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <div className="flex justify-center">
+          <EnhancedReceipt
+            transactionHash={transactionHash}
+            amount={amount}
+            productName={description}
+            sessionId={currentSessionId}
+            timestamp={new Date().toISOString()}
+            recipientAddress={recipient}
+            onDownload={downloadReceipt}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container max-w-md mx-auto py-8 px-4">
-     
+
       <Card>
         <CardHeader>
           <CardTitle>Payment Request</CardTitle>
@@ -532,26 +440,7 @@ function PaymentPageContent() {
             )}
             
             <div className=''>
-            {paymentStatus === 'completed' && (
-              <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-md text-green-600 dark:text-green-400">
-                <div className="flex items-start space-x-2">
-                  <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                  <div className='flex flex-col flex-1'>
-                    <p className="font-medium">Payment Successful</p>
-                    <p className="text-xs mt-1 break-all">Transaction Hash: {transactionHash}</p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={downloadReceipt}
-                    className="h-8 w-8 p-0 bg-green-700/20 rounded-lg text-green-600 hover:text-green-700 hover:bg-green-100 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900/20"
-                    title="Download Receipt"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
+            {/* Success state is now handled separately above */}
             
             {paymentStatus === 'failed' && (
               <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-md flex items-center space-x-2 text-red-600 dark:text-red-400">

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Navigation } from '@/components/navigation'
+import { NavigationWrapper } from '@/components/navigation-wrapper'
 import { Footer } from '@/components/footer'
 import { HeroSection } from '@/components/sections/hero-section'
 import { FeaturesSection } from '@/components/sections/features-section'
@@ -10,12 +10,12 @@ import { FooterNav } from '@/components/footer-nav'
 export default function HomePage() {
   return (
     <main className="min-h-screen">
-     
+      <NavigationWrapper />
       <HeroSection />
       <FeaturesSection />
       <HowItWorksSection />
       <StatsSection />
-      
+
       {/* <FooterNav /> */}
     </main>
   )

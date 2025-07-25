@@ -3,44 +3,119 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { QrCode, Wallet, BarChart3, Menu, X, User } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { QrCode, BarChart3, Menu, X, LogOut } from 'lucide-react'
+import { toast } from 'sonner'
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api'
+
+// Navigation component that handles authentication via API calls
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  // Check authentication status from cookies
+  // Check authentication status using the same logic as vendor dashboard
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check token cookie and verify with API (same as AuthProvider)
         const Cookies = (await import('js-cookie')).default
-        const authSession = Cookies.get('auth_session')
         const token = Cookies.get('token')
-        
-        // console.log('🍪 Cookie Debug:', {
-        //   authSession,
-        //   token,
-        //   authSessionIsTrue: authSession === 'true',
-        //   tokenExists: !!token,
-        //   finalAuth: authSession === 'true' && !!token
-        // })
-        
-        setIsAuthenticated(authSession === 'true' && !!token)
+
+        if (token) {
+          // Verify token with API call (same as vendor dashboard)
+          const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            if (data.vendor) {
+              console.log('🔍 Navbar Auth Check (API):', {
+                vendor: data.vendor.name,
+                isAuthenticated: true
+              })
+              setIsAuthenticated(true)
+              return
+            }
+          }
+        }
+
+        // No valid authentication found
+        console.log('🔍 Navbar Auth Check:', {
+          token: token ? 'present' : 'missing',
+          isAuthenticated: false
+        })
+        setIsAuthenticated(false)
       } catch (error) {
-        console.error('Cookie check error:', error)
+        console.error('Auth check error:', error)
         setIsAuthenticated(false)
       }
     }
-    
+
     checkAuth()
+
+    // Check auth periodically to catch changes
+    const interval = setInterval(checkAuth, 3000) // Check every 3 seconds
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      console.log('🔄 Auth change event received')
+      checkAuth()
+    }
+    window.addEventListener('auth-change', handleAuthChange)
+    window.addEventListener('storage', handleAuthChange)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('auth-change', handleAuthChange)
+      window.removeEventListener('storage', handleAuthChange)
+    }
   }, [])
 
-  const navItems = [
-    // { href: '/', label: 'Home', icon: QrCode },
-    // { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    // { href: '/wallet', label: 'Wallet', icon: Wallet },
-  ]
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      // Call logout API endpoint
+      await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      // Clear cookies manually
+      const Cookies = (await import('js-cookie')).default
+      Cookies.remove('token')
+      Cookies.remove('xionWalletAddress')
+      Cookies.remove('xion_address')
+
+      // Update state
+      setIsAuthenticated(false)
+
+      // Dispatch auth change event
+      window.dispatchEvent(new CustomEvent('auth-change'))
+
+      // Redirect to signin
+      window.location.href = '/signin'
+
+      toast.success('Logged out successfully')
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast.error('Failed to logout')
+    }
+  }
+
+  // Navigation items (currently unused but kept for future use)
+  // const navItems = [
+  //   { href: '/', label: 'Home', icon: QrCode },
+  //   { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+  // ]
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/20 backdrop-blur-2xl border-b border-white/10 shadow-lg">
@@ -77,13 +152,26 @@ export function Navigation() {
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
+            {/* Debug info - remove in production */}
+            {process.env.NODE_ENV === 'development' && (
+              <span className="text-xs text-gray-400">
+                {/* Auth: {isAuthenticated ? 'Yes' : 'No'} */}
+              </span>
+            )}
+
             {isAuthenticated ? (
-              <Link href="/vendor">
-                <Button variant="gradient" size="sm">
-                  <BarChart3 className="w-4 h-4 mr-2" />
-                  Go to Dashboard
+              <>
+                <Link href="/vendor">
+                  <Button variant="gradient" size="sm">
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    Go to Dashboard
+                  </Button>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
                 </Button>
-              </Link>
+              </>
             ) : (
               <>
                 <Link href="/signin">
@@ -137,12 +225,25 @@ export function Navigation() {
             })} */}
             <div className="pt-4 pb-2 space-y-2">
               {isAuthenticated ? (
-                <Link href="/vendor">
-                  <Button variant="gradient" className="w-full justify-start">
-                    <BarChart3 className="w-4 h-4 mr-2" />
-                    Go to Dashboard
+                <>
+                  <Link href="/vendor">
+                    <Button variant="gradient" className="w-full justify-start">
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setIsOpen(false)
+                      handleLogout()
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
                   </Button>
-                </Link>
+                </>
               ) : (
                 <>
                   <Link href="/signin">
