@@ -180,14 +180,21 @@ The ${process.env.APP_NAME} Team`,
       </div>
 
       <!-- Social Links -->
-      <div style="text-align:center; margin-top:2rem;">
-        <a href="https://twitter.com/yourapp" style="margin-right:10px;">
-          <img src="https://yourdomain.com/icons/twitter.png" alt="Twitter" height="20" />
-        </a>
-        <a href="https://discord.gg/yourapp">
-          <img src="https://yourdomain.com/icons/discord.png" alt="Discord" height="20" />
-        </a>
-      </div>
+<div style="text-align:center; margin-top:2rem;">
+  <a href="#" target="_blank" rel="noopener noreferrer" style="margin-right:10px;">
+    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/twitter.svg" alt="Twitter" height="20" />
+  </a>
+  <a href="#" target="_blank" rel="noopener noreferrer" style="margin-right:10px;">
+    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/discord.svg" alt="Discord" height="20" />
+  </a>
+  <a href="#" target="_blank" rel="noopener noreferrer" style="margin-right:10px;">
+    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/facebook.svg" alt="Facebook" height="20" />
+  </a>
+  <a href="#" target="_blank" rel="noopener noreferrer">
+    <img src="https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/instagram.svg" alt="Instagram" height="20" />
+  </a>
+</div>
+
 
       <!-- Footer -->
       <div style="text-align:center; margin-top:2rem; font-size:12px; color:#64748b;">

@@ -2,7 +2,6 @@ import express from "express";
 import {
   startPaymentSession,
   getPaymentStatus,
-  updatePaymentSession,
   completePaymentSession,
   getActivePaymentSessions,
   getAllPaymentSessions,
@@ -17,13 +16,13 @@ paymentSessionRouter.post("/", isAuthenticated, startPaymentSession);
 // Public: get session status (e.g., polling from frontend)
 paymentSessionRouter.get("/status/:sessionId", getPaymentStatus);
 
-// Public: update session with email (before payment completes)
-paymentSessionRouter.put("/:sessionId", updatePaymentSession);
+// // Public: update session with email (before payment completes)
+// paymentSessionRouter.put("/:sessionId", updatePaymentSession);
 
-// Public: mark session as completed after payment hash detected
+// Public: mark session as completed after payment hash is detected
 paymentSessionRouter.post("/complete", completePaymentSession);
 
-// Authenticated Vendor: get all their pending sessions
+// Authenticated Vendor: get all their active (pending) sessions
 paymentSessionRouter.get("/active", isAuthenticated, getActivePaymentSessions);
 
 // Authenticated Vendor: get all sessions (pending/completed/expired)
