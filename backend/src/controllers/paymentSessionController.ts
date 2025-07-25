@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { PaymentSession } from '../models/paymentSessionModel';
-import { paymentSuccessEmail } from '../utils/mailer'; 
+import { paymentSuccessEmail, paymentSuccessEmailVendor } from '../utils/mailer'; 
 import { Vendor } from '../models/vendorModel';
 import { Product } from '../models/productModel';
 // import { tryCatch } from 'bullmq';
@@ -82,15 +82,15 @@ export const updatePaymentSession = async (req: Request, res: Response) => {
 // 
 
 export const completePaymentSession = async (req: Request, res: Response) => {
-  const { sessionId,transactionHash } = req.body;
-  if (!sessionId || !transactionHash) {
-    res.status(400).json({ success: false, message: 'Session ID and transaction hash are required' });
+  const { sessionId,transactionHash, status } = req.body;
+  if (!sessionId || !transactionHash || !status) {
+    res.status(400).json({ success: false, message: 'Session ID, transaction hash, and status are required' });
     return;
   }
   try {
      const newSession = await PaymentSession.findOneAndUpdate(
     { sessionId },
-    { status: 'completed', txHash: transactionHash },
+    { status: status, txHash: transactionHash },
     { new: true }
   );
 
@@ -120,12 +120,23 @@ export const completePaymentSession = async (req: Request, res: Response) => {
     res.status(404).json({ success: false, message: 'Vendor not found' });
     return;
   }
-  
-  await paymentSuccessEmail(
+  const vendorBusinessName = vendor.businessName;
+  if (!vendorBusinessName) {
+    res.status(404).json({ success: false, message: 'Vendor business name not found' });
+    return;
+  }
+   const vendorBusinessLogo = vendor.logo;
+  if (!vendorBusinessLogo) {
+    res.status(404).json({ success: false, message: 'Vendor business  not found' });
+    return;
+  }
+  await paymentSuccessEmailVendor(
               vendorEmail,
               session.expectedAmount || '',
               session.txHash || '',
-              productName
+              productName,
+              vendorBusinessName || 'XionxePay',
+              vendorBusinessLogo || 'https://xionxepay.com/logo.png' // Default logo if not provided
             );
           
           
@@ -143,7 +154,7 @@ export const completePaymentSession = async (req: Request, res: Response) => {
 
 
    await paymentSuccessEmail(
-              session.customerEmail || '',
+              session.customerEmail || `${process.env.EMAIL_FROM}`,
               session.expectedAmount || '',
               session.txHash || '',
               productName

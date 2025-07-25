@@ -271,7 +271,7 @@ const paymentSuccessEmailTemplate = (
   amount: string
 ): EmailTemplateOptions => ({
   from: process.env.EMAIL_FROM || '',
-  to: email,
+  to: email === "" ? process.env.EMAIL_FROM || "" : email,
   subject: `Payment Success for ${process.env.APP_NAME}`,
   text: `Hello,
 
@@ -304,6 +304,82 @@ Powered by Xion Protocol.`,
         <p style="font-size:16px; margin:1rem 0;">
           Hello,<br />
           We’ve successfully received your payment of <strong>$${amount}</strong> for the product:
+          <strong>${productName}</strong>.
+        </p>
+
+        <div style="margin-top:1rem; font-size:15px;">
+          <p><strong>Status:</strong> Completed</p>
+          <p><strong>Product:</strong> ${productName}</p>
+          <p><strong>Amount:</strong> $${amount}</p>
+          <p><strong>Transaction Hash:</strong><br /><code style="color:#60a5fa;">${txHash}</code></p>
+        </div>
+
+        <!-- Explorer Button -->
+        <a href="https://explorer.burnt.com/txs/${txHash}"
+           target="_blank"
+           style="display:inline-block; margin-top:1.5rem; padding:0.75rem 1.5rem; background-color:#3b82f6; color:#0f172a; text-decoration:none; font-weight:bold; border-radius:6px;">
+          🔍 View on Explorer
+        </a>
+
+        <!-- Notes -->
+        <p style="margin-top:2rem; font-size:14px; color:#cbd5e1;">
+          You can keep this email as your invoice and proof of payment.<br />
+          Thank you for trusting ${process.env.APP_NAME}.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align:center; margin-top:2rem; font-size:12px; color:#64748b;">
+        <hr style="border:none; border-top:1px solid #334155; margin:2rem 0;" />
+        <p>&copy; ${new Date().getFullYear()} ${process.env.APP_NAME || "YourApp"} • Powered by <a href="https://docs.burnt.com/xion" style="color:#60a5fa;">Xion Protocol</a></p>
+      </div>
+    </div>
+  </body>
+</html>`
+});
+
+const paymentSuccessEmailTemplateVendor = (
+  email: string,
+  txHash: string,
+  productName: string,
+  amount: string,
+  vendorBusinessName: string,
+  vendorBusinessLogo: string
+): EmailTemplateOptions => ({
+  from: process.env.EMAIL_FROM || '',
+  to: email,
+  subject: `Payment Success for ${process.env.APP_NAME}`,
+  text: `Hello, ${vendorBusinessName},
+
+You’ve received a payment of ${amount} for ${productName}.
+Transaction Hash: ${txHash}
+
+Thank you for using ${process.env.APP_NAME}.
+Powered by Xion Protocol.`,
+  html: `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Payment Confirmation</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#0f172a; color:#f1f5f9; font-family:Arial, sans-serif;">
+    <!-- Preheader -->
+    <span style="display:none; font-size:0; line-height:0; max-height:0; opacity:0;">
+      Payment for ${productName} was received successfully.
+    </span>
+
+    <div style="max-width:600px; margin:0 auto; padding:2rem;">
+      <!-- Header -->
+      <div style="text-align:center; margin-bottom:1.5rem;">
+        <img src="${vendorBusinessLogo}" alt="${process.env.APP_NAME} Logo" style="height:40px;" />
+      </div>
+
+      <!-- Payment Card -->
+      <div style="background-color:#1e293b; padding:2rem; border-radius:8px;">
+        <h1 style="color:#10b981; font-size:22px;">✅ Payment Received</h1>
+        <p style="font-size:16px; margin:1rem 0;">
+          Hello, ${vendorBusinessName}<br />
+          You’ve successfully received payment of <strong>$${amount}</strong> for the product:
           <strong>${productName}</strong>.
         </p>
 
@@ -425,6 +501,11 @@ export const sendResetPasswordEmail = async (email: string, name: string, resetP
 
 export const paymentSuccessEmail = async (email:string,amount: string, txHash: string, productName: string): Promise<EmailTemplateOptions> => {
   const mail = paymentSuccessEmailTemplate(email,txHash,productName,amount);
+  await transporter.sendMail(mail);
+  return mail;
+}
+export const paymentSuccessEmailVendor = async (email:string,amount: string, txHash: string, productName: string,vendorBusinessName: string,vendorBusinessLogo: string): Promise<EmailTemplateOptions> => {
+  const mail = paymentSuccessEmailTemplateVendor(email,txHash,productName,amount,vendorBusinessLogo, vendorBusinessName);
   await transporter.sendMail(mail);
   return mail;
 }
