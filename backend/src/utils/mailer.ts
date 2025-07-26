@@ -398,7 +398,7 @@ Powered by Xion Protocol.`,
         </div>
 
         <!-- Explorer Button -->
-        <a href="https://explorer.burnt.com/txs/${txHash}"
+        <a href="https://explorer.burnt.com/xion-testnet-2/tx/${txHash}"
            target="_blank"
            style="display:inline-block; margin-top:1.5rem; padding:0.75rem 1.5rem; background-color:#3b82f6; color:#0f172a; text-decoration:none; font-weight:bold; border-radius:6px;">
           🔍 View on Explorer
