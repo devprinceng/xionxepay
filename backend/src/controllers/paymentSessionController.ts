@@ -1,206 +1,237 @@
 import { Request, Response } from 'express';
 import { PaymentSession } from '../models/paymentSessionModel';
-import { paymentSuccessEmail, paymentSuccessEmailVendor } from '../utils/mailer'; 
+import { paymentSuccessEmailVendor } from '../utils/mailer'; 
 import { Vendor } from '../models/vendorModel';
 import { Product } from '../models/productModel';
-// import { tryCatch } from 'bullmq';
-// import { paymentQueue } from '../queues/paymentQueue';
+import { Transaction } from '../models/transactionModel';
+import { v4 } from 'uuid';
 
-export const startPaymentSession = async (req: Request, res: Response) => {
-  const {transactionId, productId, expectedAmount, sessionId, memo, vendorWallet} = req.body;
+export const startPaymentSession = async (req: Request, res: Response): Promise<void> => {
+  const { productId, expectedAmount, sessionId, memo, vendorWallet } = req.body;
   const vendorId = req.user?._id;
 
-  if (!transactionId || !productId || !expectedAmount || !sessionId || !memo || !vendorWallet) {
+  if (!expectedAmount || !sessionId || !memo || !vendorWallet) {
     res.status(400).json({ success: false, message: 'Missing required fields' });
     return;
   }
- try {
-  await PaymentSession.create({ sessionId, vendorId, productId, expectedAmount, memo, transactionId, vendorWallet });
-  // await paymentQueue.add('poll-xion', { sessionId, address, expectedAmount, expiresAt,memo }, {
-  //   attempts: 3,
-  //   backoff: { type: 'exponential', delay: 10000 }
-  // });
 
-  res.status(200).json({ sessionId, message: 'Payment session started' });
-  return;
- } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        res.status(500).json({ success: false, message: "Unable to create session", error: errorMessage });
+  const expirationTime = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 minutes
+
+  try {
+    const transactionId = v4();
+
+    if (productId) {
+      const product = await Product.findById(productId);
+      if (!product) {
+        res.status(404).json({ success: false, message: 'Product not found' });
+        return;
+      }
+
+      await Transaction.create({
+        transactionId,
+        vendorId,
+        productId,
+        expectedAmount,
+        memo,
+        vendorWallet,
+        expiresAt: expirationTime,
+      });
+
+      await PaymentSession.create({
+        sessionId,
+        vendorId,
+        productId,
+        expectedAmount,
+        memo,
+        transactionId,
+        vendorWallet,
+        expiresAt: expirationTime,
+      });
+    } else {
+      await PaymentSession.create({
+        sessionId,
+        vendorId,
+        isCustom: true,
+        expectedAmount,
+        memo,
+        transactionId,
+        vendorWallet,
+        expiresAt: expirationTime,
+      });
+      await Transaction.create({
+        transactionId,
+        vendorId,
+        isCustom: true,
+        expectedAmount,
+        memo,
+        vendorWallet,
+        expiresAt: expirationTime,
+      });
     }
+
+
+    res.status(200).json({ success: true, sessionId, message: 'Payment session started successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Unable to create session', error: String(error) });
+  }
 };
 
-export const getPaymentStatus = async (req: Request, res: Response) => {
+
+export const getPaymentStatus = async (req: Request, res: Response): Promise<void> => {
   const { sessionId } = req.params;
-  try{
+
+  try {
     const session = await PaymentSession.findOne({ sessionId });
+
     if (!session) {
-      res.status(404).json({ success: false, message: 'Session not found' });
+      res.status(404).json({ success: false, message: 'Payment session not found' });
       return;
     }
-    if(!session.expiresAt) {
-      res.status(400).json({ success: false, message: 'Session has no expiration date' });
-      return;
-    } 
-    if (session.status === "pending" && session.expiresAt < new Date()) {
-    session.status = "expired";
-    await session.save();
-    res.status(200).json({ success: false, message: 'Session has expired' });
-    return;
-  }
-    res.status(200).json({ success: true, session });
-    return;
-  }catch(error){
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: 'Unable to fetch session', error: errorMessage });
-    return;
-  }
-}
 
-export const updatePaymentSession = async (req: Request, res: Response) => {
-  const { sessionId } = req.params;
-  const { email} = req.body;
-
-  if (!email) {
-    res.status(400).json({ success: false, message: 'Email is required' });
-    return;
-  }
-  try {
-    const session = await PaymentSession.findOneAndUpdate({ sessionId }, { customerEmail: email }, { new: true });
-    if (!session) {
-      res.status(404).json({ success: false, message: 'Session not found' });
+    if (!session.expiresAt) {
+      res.status(400).json({ success: false, message: 'Session has no expiration' });
       return;
     }
+
+    if (session.status === 'pending' && session.expiresAt < new Date()) {
+      session.status = 'expired';
+      await Transaction.findByIdAndUpdate(session.transactionId, { status: 'expired' });
+      await session.save();
+      res.status(200).json({ success: false, message: 'Payment session has expired' });
+      return;
+    }
+
     res.status(200).json({ success: true, session });
-    return;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: 'Unable to update session', error: errorMessage });
-    return;
-  }
-}
-
-// 
-
-export const completePaymentSession = async (req: Request, res: Response) => {
-  const { sessionId,transactionHash, status } = req.body;
-  if (!sessionId || !transactionHash || !status) {
-    res.status(400).json({ success: false, message: 'Session ID, transaction hash, and status are required' });
-    return;
-  }
-  try {
-     const newSession = await PaymentSession.findOneAndUpdate(
-    { sessionId },
-    { status: status, txHash: transactionHash },
-    { new: true }
-  );
-
-  if (!newSession) {
-    res.status(404).json({ success: false, message: 'Session not found' });
-    return;
-  }
-  const session = await PaymentSession.findOne({ sessionId });
-  if (!session) {
-    res.status(404).json({ success: false, message: 'Session not found' });
-    return;
-  }
-  const vendor = await Vendor.findById(session.vendorId);
-  if (!vendor) {
-    res.status(404).json({ success: false, message: 'Vendor not found' });
-    return;
-  }
-  const product = await Product.findById(session.productId);
-  if (!product) {
-    res.status(404).json({ success: false, message: 'Product not found' });
-    return;
-  }
-  const productName = product.name;
-
-  const vendorEmail = vendor.email;
-  if (!vendorEmail) {
-    res.status(404).json({ success: false, message: 'Vendor not found' });
-    return;
-  }
-  const vendorBusinessName = vendor.businessName;
-  if (!vendorBusinessName) {
-    res.status(404).json({ success: false, message: 'Vendor business name not found' });
-    return;
-  }
-   const vendorBusinessLogo = vendor.logo;
-  if (!vendorBusinessLogo) {
-    res.status(404).json({ success: false, message: 'Vendor business  not found' });
-    return;
-  }
-  await paymentSuccessEmailVendor(
-              vendorEmail,
-              session.expectedAmount || '',
-              session.txHash || '',
-              productName,
-              vendorBusinessName || 'XionxePay',
-              vendorBusinessLogo || 'https://xionxepay.com/logo.png' // Default logo if not provided
-            );
-          
-          
-  // sessionId:{ type: string; unique: true };
-  //   vendorId: { type: mongoose.Schema.Types.ObjectId, ref: "Vendor", required: true };
-  //   productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true }; // Product ID
-  //   address: string;
-  //   customerEmail?: string;
-  //   expectedAmount: string;
-  //   status: "pending" | "completed" | "failed"| "expired";
-  //   txHash?: string;
-  //   createdAt: Date;
-  //   expiresAt: Date;
-  // }
-
-
-   await paymentSuccessEmail(
-              session.customerEmail || `${process.env.EMAIL_FROM}`,
-              session.expectedAmount || '',
-              session.txHash || '',
-              productName
-            );
-  res.status(200).json({ success: true, session });
-  return;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: 'Unable to complete session', error: errorMessage });
-    return;
+    res.status(500).json({ success: false, message: 'Unable to fetch payment session', error: String(error) });
   }
 };
 
-export const getActivePaymentSessions = async (req: Request, res: Response) => {
-  const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
-  try {
-    const sessions = await PaymentSession.find({ vendorId, status: 'pending' }).populate('productId', 'name price');
-  if (!sessions || sessions.length === 0) {
-    res.status(404).json({ success: false, message: 'No active payment sessions found' });
+// export const updatePaymentSession = async (req: Request, res: Response): Promise<void> => {
+//   const { sessionId } = req.params;
+//   const { email } = req.body;
+
+//   if (!email) {
+//     res.status(400).json({ success: false, message: 'Email is required' });
+//     return;
+//   }
+
+//   try {
+//     const updated = await PaymentSession.findOneAndUpdate(
+//       { sessionId },
+//       { customerEmail: email },
+//       { new: true }
+//     );
+
+//     if (!updated) {
+//       res.status(404).json({ success: false, message: 'Session not found' });
+//       return;
+//     }
+
+//     res.status(200).json({ success: true, session: updated });
+//   } catch (error) {
+//     res.status(500).json({ success: false, message: 'Unable to update session', error: String(error) });
+//   }
+// };
+
+export const completePaymentSession = async (req: Request, res: Response): Promise<void> => {
+  const { sessionId, transactionHash, status: newStatus } = req.body;
+
+  if (!sessionId || !transactionHash || !newStatus) {
+    res.status(400).json({ success: false, message: 'Missing required fields' });
     return;
   }
 
-  res.status(200).json({ success: true, sessions: sessions });
-  return;
+  try {
+    const paymentSession = await PaymentSession.findOneAndUpdate(
+      { sessionId },
+      { status: newStatus, txHash: transactionHash },
+      { new: true }
+    );
+    const transaction = await Transaction.findOneAndUpdate(
+      { transactionId: paymentSession?.transactionId },
+      { status: newStatus, transactionHash },
+      { new: true }
+    );
+
+    if(!transaction) {
+      res.status(404).json({ success: false, message: 'Transaction not found' });
+      return;
+    }
+
+    if (!paymentSession) {
+      res.status(404).json({ success: false, message: 'Payment session not found' });
+      return;
+    }
+
+    const vendor = await Vendor.findById(paymentSession.vendorId);
+    if (!vendor) {
+      res.status(404).json({ success: false, message: 'Vendor not found' });
+      return;
+    }
+
+    const product = paymentSession.productId
+      ? await Product.findById(paymentSession.productId)
+      : undefined;
+
+    if (product) {
+      await paymentSuccessEmailVendor(
+        vendor.email,
+        paymentSession.expectedAmount || '',
+        paymentSession.txHash || '',
+        product.name,
+        vendor.businessName || 'XionxePay',
+        vendor.logo || 'https://xionxepay.com/logo.png'
+      );
+    } else {
+      await paymentSuccessEmailVendor(
+        vendor.email,
+        paymentSession.expectedAmount || '',
+        paymentSession.txHash || '',
+        'Custom Payment',
+        vendor.businessName || 'XionxePay',
+        vendor.logo || 'https://xionxepay.com/logo.png'
+      );
+    }
+
+    res.status(200).json({ success: true, paymentSession });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: 'Unable to fetch active sessions', error: errorMessage });
-    return;
-    
+    res.status(500).json({ success: false, message: 'Unable to complete session', error: String(error) });
   }
 };
-//Payment Session within 24 hours
-export const getAllPaymentSessions = async (req: Request, res: Response) => {
-  const vendorId = req.user?._id; // Assuming req.user is set by isAuthenticated middleware
+
+export const getActivePaymentSessions = async (req: Request, res: Response): Promise<void> => {
+  const vendorId = req.user?._id;
+
+  try {
+    const active = await PaymentSession.find({ vendorId, status: 'pending' })
+      .populate('productId', 'name price')
+      .lean();
+
+    if (!active.length) {
+      res.status(404).json({ success: false, message: 'No active sessions' });
+      return;
+    }
+
+    res.status(200).json({ success: true, activeSessions: active });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Unable to fetch active sessions', error: String(error) });
+  }
+};
+
+export const getAllPaymentSessions = async (req: Request, res: Response): Promise<void> => {
+  const vendorId = req.user?._id;
+
   try {
     const sessions = await PaymentSession.find({ vendorId }).populate('productId', 'name price');
-    if (!sessions || sessions.length === 0) {
+
+    if (!sessions.length) {
       res.status(404).json({ success: false, message: 'No payment sessions found' });
       return;
     }
 
     res.status(200).json({ success: true, sessions });
-    return;
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: 'Unable to fetch payment sessions', error: errorMessage });
-    return;
+    res.status(500).json({ success: false, message: 'Unable to fetch sessions', error: String(error) });
   }
 };
