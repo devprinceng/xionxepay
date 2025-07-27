@@ -40,8 +40,8 @@ export function EnhancedReceipt({
   }
 
   const handleViewOnExplorer = () => {
-    // Open transaction on Xion explorer (adjust URL as needed)
-    const explorerUrl = `https://explorer.xion.burnt.com/tx/${transactionHash}`
+    // Open transaction on Xion explorer using environment variable
+    const explorerUrl = `${process.env.NEXT_PUBLIC_XION_EXPLORER_URL}/${transactionHash}`
     window.open(explorerUrl, '_blank')
   }
 
