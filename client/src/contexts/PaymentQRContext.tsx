@@ -156,14 +156,11 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
     const fetchPaymentLinks = async () => {
       try {
         // Use documented APIs: get recent sessions (all statuses) and transactions
-        const [sessions, transactions] = await Promise.all([
-          paymentSessionAPI.getRecentSessions(5), // Get top 5 recent sessions regardless of status
-          paymentAPI.getAllTransactions()
-        ])
+        const sessions = await paymentSessionAPI.getRecentSessions(5) // Get top 5 recent sessions regardless of status
         
         // Convert sessions to payment links format for UI compatibility
         const links = await Promise.all(sessions.map(async session => {
-          const transaction = transactions.find(tx => tx.transactionId === session.transactionId)
+          // Transaction lookup not needed for current implementation
           const paymentLink = `${window.location.origin}/pay/${session.sessionId}`
 
           // Generate QR code for existing payment links
@@ -185,17 +182,15 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
 
           return {
             id: session._id,
-            productId: session.productId,
-            productName: transaction ?
-              (typeof transaction.productId === 'object' ? transaction.productId.name : 'Product') :
-              'Product',
+            productId: session.productId || 'custom', // Handle optional productId
+            productName: session.isCustom ? 'Custom Payment' : 'Product',
             amount: session.expectedAmount,
             description: session.memo,
             created: session.createdAt,
             link: paymentLink,
             qrCodeData: qrCodeData,
             status: session.status as 'pending' | 'processing' | 'completed' | 'failed' | 'expired', // Ensure proper typing
-            transactionId: session.transactionId,
+            transactionId: session.transactionId || session.sessionId,
             transactionHash: session.transactionHash,
             txHash: session.txHash || session.transactionHash || '',
             expiresAt: session.expiresAt // Include expiration timestamp
@@ -310,7 +305,7 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
       // If we have new sessions, regenerate the entire list to ensure we show all recent ones
       if (sessions.length > 0) {
         const links = await Promise.all(sessions.map(async session => {
-          const transaction = transactions.find(tx => tx.transactionId === session.transactionId)
+          // Transaction lookup not needed for current implementation
           const paymentLink = `${window.location.origin}/pay/${session.sessionId}`
 
           // Generate QR code for existing payment links if missing
@@ -330,17 +325,15 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
 
           return {
             id: session._id,
-            productId: session.productId,
-            productName: transaction ?
-              (typeof transaction.productId === 'object' ? transaction.productId.name : 'Product') :
-              'Product',
+            productId: session.productId || 'custom', // Handle optional productId
+            productName: session.isCustom ? 'Custom Payment' : 'Product',
             amount: session.expectedAmount,
             description: session.memo,
             created: session.createdAt,
             link: paymentLink,
             qrCodeData: qrCodeData,
             status: session.status as 'pending' | 'processing' | 'completed' | 'failed' | 'expired',
-            transactionId: session.transactionId,
+            transactionId: session.transactionId || session.sessionId,
             transactionHash: session.transactionHash,
             txHash: session.txHash || session.transactionHash || '',
             expiresAt: session.expiresAt
@@ -397,37 +390,8 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
 
     setIsGenerating(true)
 
-    // Handle custom payments by creating a temporary product if needed
-    let actualProductId = productId
-    if (productId === 'custom') {
-      try {
-        // For custom payments, we'll create a temporary product entry
-        // This is a workaround since the backend requires a valid productId
-        const customProduct = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000'}/api/products`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: `Custom Payment - ${Date.now()}`, // Make it unique
-            price: parseFloat(amount),
-          }),
-        })
-
-        if (!customProduct.ok) {
-          throw new Error('Failed to create custom product')
-        }
-
-        const customProductData = await customProduct.json()
-        actualProductId = customProductData.product._id
-      } catch (error) {
-        console.error('Failed to create custom product:', error)
-        toast.error('Failed to create custom payment. Please try again.')
-        setIsGenerating(false)
-        return null
-      }
-    }
+    // Determine if this is a product-based payment or custom payment
+    const isCustomPayment = productId === 'custom'
     
     try {
       // Step 1: Generate sessionId and create structured memo first
@@ -439,35 +403,28 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
       const VENDOR_BUSINESS_NAME = businessProfile?.businessName || vendorContext?.vendorProfile?.name || 'XionxePay'
       const structuredMemo = `${APP_NAME}/${VENDOR_BUSINESS_NAME}/${productName}/${sessionId}`
 
-      // console.log('📝 Creating transaction with structured memo:', structuredMemo)
+      // console.log('📝 Creating payment session with structured memo:', structuredMemo)
 
-      // Step 2: Create transaction via /api/payment POST (description = memo)
-      const transaction = await paymentAPI.createTransaction({
-        amount: parseFloat(amount),
-        productId: actualProductId, // Use the actual product ID (either original or newly created)
-        description: structuredMemo  // ← Use structured memo as description
-      })
-
-      // console.log('✅ Transaction created:', transaction)
-
-      // Step 3: Create payment session using the transactionId from step 1
-      const sessionData = {
-        transactionId: transaction.transactionId,
-        productId: actualProductId, // Use the actual product ID
+      // Step 2: Create payment session (backend will create transaction automatically)
+      const sessionData: any = {
         expectedAmount: amount,
         sessionId: sessionId,
         memo: structuredMemo,
         vendorWallet: vendorWallet || ''
       }
-      
+
+      // Only include productId for product-based payments, not custom payments
+      if (!isCustomPayment) {
+        sessionData.productId = productId
+      }
+
       console.log('🔍 DEBUG: Payment session data being sent to API:', {
         sessionData,
         vendorWallet,
         businessProfile,
-        vendorContext: vendorContext?.vendorProfile,
-        transaction
+        vendorContext: vendorContext?.vendorProfile
       })
-      
+
       const session = await paymentSessionAPI.startPaymentSession(sessionData)
       
       // IMPORTANT: Use the sessionId we generated, not session._id from API
@@ -490,14 +447,14 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
         productName,
         amount,
         description,
-        created: session.createdAt,
+        created: session.createdAt || new Date().toISOString(),
         link: paymentLink,
         qrCodeData,
-        status: session.status,
-        transactionId: transaction.transactionId,
-        transactionHash: session.transactionHash,
-        txHash: session.txHash || session.transactionHash || '',
-        expiresAt: session.expiresAt // Include expiration timestamp
+        status: session.status || 'pending',
+        transactionId: session.transactionId || sessionId,
+        transactionHash: '',
+        txHash: session.txHash || '',
+        expiresAt: session.expiresAt || new Date(Date.now() + 5 * 60 * 1000).toISOString() // Include expiration timestamp
       }
       
       // Create payment link object for local state - use our generated sessionId as the ID
@@ -513,7 +470,14 @@ export const PaymentQRProvider: React.FC<PaymentQRProviderProps> = ({ children }
       return newLink
     } catch (error) {
       console.error('Failed to generate payment link:', error)
-      toast.error('Failed to generate payment link')
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        productId,
+        amount,
+        description
+      })
+      toast.error('Failed to create custom payment. Please try again.')
       return null
     } finally {
       setIsGenerating(false)

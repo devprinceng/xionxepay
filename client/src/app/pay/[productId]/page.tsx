@@ -265,6 +265,7 @@ function PaymentPageContent() {
       )
       
       // Get the transaction hash from the result
+      console.log(result)
       const transactionHash = result.transactionHash
       setTransactionHash(transactionHash)
       setPaymentStatus('completed')

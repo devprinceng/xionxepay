@@ -182,7 +182,7 @@ const WalletPage = () => {
                             variant="outline"
                             size="sm"
                             className="text-aurora-blue-400 hover:text-aurora-blue-300 border-aurora-blue-500/20"
-                            onClick={() => window.open('https://explorer.burnt.com/xion-testnet-1', '_blank')}
+                            onClick={() => window.open('https://explorer.burnt.com/xion-testnet-2', '_blank')}
                           >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             View in Explorer

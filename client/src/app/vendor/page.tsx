@@ -41,14 +41,14 @@ const VendorPage = () => {
         
         // Calculate stats from real data
         const completedTransactions = allTransactions.filter(t => t.status === 'completed')
-        const totalSales = completedTransactions.reduce((sum, t) => sum + t.amount, 0)
+        const totalSales = completedTransactions.reduce((sum, t) => sum + (t.amount || 0), 0)
         const totalTransactions = allTransactions.length
         
-        // Get unique customers (basic count based on customerEmail if available)
+        // Get unique customers (basic count based on customer field if available)
         const uniqueCustomers = new Set(
           allTransactions
-            .filter(t => t.customerEmail)
-            .map(t => t.customerEmail)
+            .filter(t => t.customer)
+            .map(t => t.customer)
         ).size
         
         setStats([
@@ -195,7 +195,7 @@ const VendorPage = () => {
                               {new Date((transaction as any).createdAt || Date.now()).toLocaleDateString()}
                             </td>
                             <td className="py-3 text-white">
-                              {transaction.amount.toFixed(6)} XION
+                              {(transaction.amount || 0).toFixed(6)} XION
                             </td>
                             <td className="py-3">
                               <span className={`px-2 py-1 text-xs rounded-full ${

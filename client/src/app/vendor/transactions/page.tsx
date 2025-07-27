@@ -82,9 +82,9 @@ const TransactionsPage = () => {
     // Map transactions to CSV rows
     const rows = transactionsToExport.map(tx => [
       tx._id,
-      tx.description,
+      tx.description || 'N/A',
       tx.customer || 'N/A',
-      tx.formattedAmount || `${tx.amount} XION`,
+      tx.formattedAmount || `${tx.amount || 0} XION`,
       tx.status,
       (() => {
         const date = new Date((tx as any).createdAt || (tx as any).updatedAt)
@@ -124,10 +124,10 @@ const TransactionsPage = () => {
         const searchLower = searchTerm.toLowerCase()
         return (
           tx._id.toLowerCase().includes(searchLower) ||
-          tx.description.toLowerCase().includes(searchLower) ||
+          (tx.description && tx.description.toLowerCase().includes(searchLower)) ||
           (tx.customer && tx.customer.toLowerCase().includes(searchLower)) ||
           (tx.transactionHash && tx.transactionHash.toLowerCase().includes(searchLower)) ||
-          tx.amount.toString().toLowerCase().includes(searchLower)
+          (tx.amount || 0).toString().toLowerCase().includes(searchLower)
         )
       }
       
@@ -158,14 +158,14 @@ const TransactionsPage = () => {
       <div className="space-y-2">
         <div className="flex justify-between items-start">
           <div className="flex-1 min-w-0 mr-3">
-            <p className="text-white text-sm font-medium truncate">{transaction.description}</p>
+            <p className="text-white text-sm font-medium truncate">{transaction.description || 'N/A'}</p>
             <p className="text-gray-400 text-xs font-mono truncate">
               ID: {transaction._id.substring(0, 12)}...
             </p>
           </div>
           <div className="text-right flex-shrink-0">
             <p className="text-aurora-blue-400 font-bold text-sm">
-              {transaction.formattedAmount || `${transaction.amount}`}
+              {transaction.formattedAmount || `${transaction.amount || 0}`}
             </p>
           </div>
         </div>
@@ -335,12 +335,12 @@ const TransactionsPage = () => {
                         </td>
                         <td className="p-4">
                           <span className="text-white text-sm">
-                            {transaction.description.length > 30 ? `${transaction.description.substring(0, 30)}...` : transaction.description}
+                            {(transaction.description || 'N/A').length > 30 ? `${(transaction.description || 'N/A').substring(0, 30)}...` : (transaction.description || 'N/A')}
                           </span>
                         </td>
                         <td className="p-4">
                           <span className="text-aurora-blue-400 font-bold text-sm whitespace-nowrap">
-                            {transaction.amount}
+                            {transaction.amount || 0}
                           </span>
                         </td>
                         <td className="p-4">
@@ -409,7 +409,7 @@ const TransactionsPage = () => {
                 
                 <div className="space-y-2">
                   <p className="text-xs sm:text-sm text-gray-400">Amount</p>
-                  <p className="text-aurora-blue-400 font-bold text-lg sm:text-xl">{selectedTransaction.formattedAmount || `${selectedTransaction.amount}`}</p>
+                  <p className="text-aurora-blue-400 font-bold text-lg sm:text-xl">{selectedTransaction.formattedAmount || `${selectedTransaction.amount || 0}`}</p>
                 </div>
                 
                 <div className="space-y-2">
@@ -425,10 +425,7 @@ const TransactionsPage = () => {
                 <div className="space-y-2">
                   <p className="text-xs sm:text-sm text-gray-400">Product</p>
                   <p className="text-white text-sm sm:text-base break-words">
-                    {typeof selectedTransaction.productId === 'object' && selectedTransaction.productId?.name 
-                      ? `${selectedTransaction.productId.name}${selectedTransaction.productId.price ? ` (${selectedTransaction.productId.price})` : ''}` 
-                      : (typeof selectedTransaction.productId === 'string' ? selectedTransaction.productId : 'N/A')
-                    }
+                    {selectedTransaction.productId || 'Custom Payment'}
                   </p>
                 </div>
                 
@@ -439,7 +436,7 @@ const TransactionsPage = () => {
                 
                 <div className="space-y-2 sm:col-span-2">
                   <p className="text-xs sm:text-sm text-gray-400">Description</p>
-                  <p className="text-white text-sm sm:text-base break-words bg-gray-800 p-3 rounded">{selectedTransaction.description}</p>
+                  <p className="text-white text-sm sm:text-base break-words bg-gray-800 p-3 rounded">{selectedTransaction.description || 'N/A'}</p>
                 </div>
               </div>
               
@@ -456,7 +453,7 @@ const TransactionsPage = () => {
                     variant="outline" 
                     size="sm"
                     className="flex items-center gap-2 text-sm w-full sm:w-auto"
-                    onClick={() => window.open(`https://explorer.xion.app/tx/${selectedTransaction.transactionHash}`, '_blank')}
+                    onClick={() => window.open(`${process.env.NEXT_PUBLIC_XION_EXPLORER_URL}/${selectedTransaction.transactionHash}`, '_blank')}
                   >
                     <ExternalLink className="w-4 h-4" />
                     View on Xion Explorer
