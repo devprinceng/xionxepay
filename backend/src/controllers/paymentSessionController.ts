@@ -31,8 +31,8 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         transactionId,
         vendorId,
         productId,
-        expectedAmount,
-        memo,
+        amount:expectedAmount,
+        description:memo,
         vendorWallet,
         expiresAt: expirationTime,
       });
@@ -62,8 +62,8 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         transactionId,
         vendorId,
         isCustom: true,
-        expectedAmount,
-        memo,
+        amount:expectedAmount,
+        description:memo,
         vendorWallet,
         expiresAt: expirationTime,
       });
