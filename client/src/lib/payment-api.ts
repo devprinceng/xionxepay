@@ -6,48 +6,53 @@ const PAYMENT_API_URL = `${API_BASE_URL}/payment`
 const PAYMENT_SESSION_API_URL = `${API_BASE_URL}/payment-sessions`
 
 // API Response interfaces
-interface ApiResponse<T> {
+interface ApiResponse<T = any> {
   success: boolean
   message?: string
   error?: string
+  data?: T
   [key: string]: any
 }
 
-// Transaction model based on API docs
+// Transaction model based on actual backend implementation
 export interface Transaction {
   _id: string
-  amount: number
-  vendorId: string
-  productId: string | { name: string, price: number }
-  description: string
   transactionId: string
-  transactionHash: string
-  transactionTime: string
-  status: 'pending' | 'processing' | 'completed' | 'failed' | 'expired'
-  customer?: string
-  customerEmail?: string
+  amount: number // Backend now correctly stores as number
+  description: string // Backend now correctly uses 'description'
+  vendorId: string
+  productId?: string
+  isCustom: boolean
+  status: 'pending' | 'completed' | 'failed' | 'expired'
+  transactionHash?: string
+  transactionTime?: string
+  createdAt: string
+  updatedAt: string
+  __v?: number
   // Additional fields for UI display
   time?: string
   formattedAmount?: string
+  customer?: string
 }
 
-// Payment Session model based on API docs
+// Payment Session model based on actual backend implementation
 export interface PaymentSession {
   _id: string
   sessionId: string
-  transactionId: string
-  txHash: string
-  productId: string
+  transactionId?: string
+  txHash?: string
+  productId?: string
   expectedAmount: string
   memo: string
   email?: string
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'expired'
   transactionHash?: string
   createdAt: string
-  updatedAt: string
+  updatedAt?: string
   expiresAt: string
-  vendorId?: string
-  vendorWallet?: string
+  vendorId: string
+  vendorWallet: string
+  isCustom?: boolean
   __v?: number
 }
 
@@ -84,11 +89,12 @@ export interface PaymentLink {
 
 // Payment API
 export const paymentAPI = {
-  // Create a new transaction
+  // Create a new transaction - DISABLED: Backend creates transactions automatically via payment sessions
+  /*
   async createTransaction(transactionData: { amount: number, productId: string, description: string }): Promise<Transaction> {
     // console.log('Creating transaction with data:', transactionData)
     // console.log('API URL:', PAYMENT_API_URL)
-    
+
     const response = await fetch(PAYMENT_API_URL, {
       method: 'POST',
       headers: {
@@ -97,16 +103,16 @@ export const paymentAPI = {
       body: JSON.stringify(transactionData),
       credentials: 'include' // Include auth cookies
     })
-    
+
     // console.log('Response status:', response.status)
     // console.log('Response headers:', Object.fromEntries(response.headers.entries()))
-    
+
     if (!response.ok) {
       console.error('🚨 API Request Failed - Starting detailed error analysis...')
-      
+
       // Clone the response to read it multiple times if needed
       const responseClone = response.clone()
-      
+
       try {
         // console.log('📝 Attempting to parse error response as JSON...')
         const errorData = await response.json()
@@ -117,14 +123,14 @@ export const paymentAPI = {
         console.error('- Full Error Response:', errorData)
         console.error('- Error Message:', errorData.message || 'No message field')
         console.error('- Error Field:', errorData.error || 'No error field')
-        
+
         // If the error response has a message, use it
         const errorMessage = errorData.message || errorData.error || JSON.stringify(errorData)
         throw new Error(`API Error: ${errorMessage}`)
       } catch (parseError) {
         // console.log('❌ JSON parsing failed, trying text response...')
         console.error('Parse error:', parseError)
-        
+
         try {
           const errorText = await responseClone.text()
           console.error('📄 Text Error Response:')
@@ -139,17 +145,18 @@ export const paymentAPI = {
         }
       }
     }
-    
+
     const data: ApiResponse<{ transaction: Transaction }> = await response.json()
-    
+
     // Handle API response format as documented
     if (data.success === false) {
       throw new Error(data.message || 'Failed to create transaction')
     }
-    
+
     // Return the transaction from the documented response format
     return data.transaction
   },
+  */
 
   // Get a single transaction by ID
   async getTransaction(transactionId: string): Promise<Transaction | null> {
@@ -183,24 +190,33 @@ export const paymentAPI = {
       method: 'GET',
       credentials: 'include'
     })
-    
+
+    // Handle 404 case (no transactions found) - return empty array
+    if (response.status === 404) {
+      console.log('No transactions found for vendor')
+      return []
+    }
+
     if (!response.ok) {
       const errorText = await response.text()
       console.error('Get Transactions API Error:', response.status, errorText)
       throw new Error(`Failed to fetch transactions: ${response.status} ${response.statusText}`)
     }
-    
+
     const data: ApiResponse<{ transactions: Transaction[] }> = await response.json()
-    
+
     if (data.success === false) {
       throw new Error(data.message || 'Failed to fetch transactions')
     }
-    
-    return data.transactions.map((tx: { transactionTime: string | number | Date; amount: any }) => ({
+
+    // Handle case where transactions field might not exist
+    const transactions = data.transactions || []
+
+    return transactions.map((tx: any) => ({
       ...tx,
-      // Format for UI display
-      time: new Date(tx.transactionTime).toLocaleString(),
-      formattedAmount: `${tx.amount} XION`
+      // Backend now returns correct format, just add computed fields
+      time: new Date(tx.createdAt || tx.transactionTime || Date.now()).toLocaleString(),
+      formattedAmount: `${(tx.amount || 0).toFixed(6)} XION`
     }))
   },
 
@@ -236,17 +252,16 @@ export const paymentAPI = {
 export const paymentSessionAPI = {
   // Start a new payment session
   async startPaymentSession(sessionData: {
-    transactionId: string,
-    productId: string,
+    productId?: string, // Optional for custom payments
     expectedAmount: string,
     sessionId: string,
     memo: string,
-    vendorWallet?: string
+    vendorWallet: string
   }): Promise<PaymentSession> {
-    // console.log('🔧 PAYMENT SESSION DEBUG:')
-    // console.log('- API URL:', PAYMENT_SESSION_API_URL)
-    // console.log('- Session Data:', JSON.stringify(sessionData, null, 2))
-    // console.log('- Headers:', { 'Content-Type': 'application/json' })
+    console.log('🔧 PAYMENT SESSION DEBUG:')
+    console.log('- API URL:', PAYMENT_SESSION_API_URL)
+    console.log('- Session Data:', JSON.stringify(sessionData, null, 2))
+    console.log('- Headers:', { 'Content-Type': 'application/json' })
     
     const response = await fetch(PAYMENT_SESSION_API_URL, {
       method: 'POST',
@@ -260,17 +275,28 @@ export const paymentSessionAPI = {
     // console.log('- Response Status:', response.status, response.statusText)
     
     if (!response.ok) {
-      const errorText = await response.text()
+      let errorText = ''
+      let errorData = null
+      try {
+        errorText = await response.text()
+        errorData = JSON.parse(errorText)
+      } catch (e) {
+        // If JSON parsing fails, use the text as is
+      }
+
       console.error('🚨 Payment Session API Error:')
       console.error('- Status:', response.status, response.statusText)
       console.error('- URL:', PAYMENT_SESSION_API_URL)
-      console.error('- Request Data:', sessionData)
-      console.error('- Error Response:', errorText)
-      throw new Error(`Failed to start payment session: ${response.status} ${response.statusText}`)
+      console.error('- Request Data:', JSON.stringify(sessionData, null, 2))
+      console.error('- Error Response Text:', errorText)
+      console.error('- Error Response Data:', errorData)
+
+      const errorMessage = errorData?.message || errorData?.error || errorText || `${response.status} ${response.statusText}`
+      throw new Error(`Failed to start payment session: ${errorMessage}`)
     }
     
     const data = await response.json()
-    // console.log('📝 Payment Session API Response:', JSON.stringify(data, null, 2))
+    console.log('📝 Payment Session API Response:', JSON.stringify(data, null, 2))
     
     // Handle the new API response format with success field
     if (data.success === false) {
@@ -291,15 +317,16 @@ export const paymentSessionAPI = {
       return {
         _id: data.sessionId,
         sessionId: data.sessionId,
-        transactionId: sessionData.transactionId,
-        txHash: data.transactionHash,
-        productId: sessionData.productId,
+        transactionId: data.sessionId, // Use sessionId as fallback
+        txHash: data.transactionHash || '',
+        productId: sessionData.productId || '',
         expectedAmount: sessionData.expectedAmount,
         memo: sessionData.memo,
         status: 'pending' as const,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes from now
+        vendorId: 'unknown', // Will be populated when fetched later
         vendorWallet: sessionData.vendorWallet
       }
     } else {
@@ -398,13 +425,26 @@ export const paymentSessionAPI = {
       credentials: 'include' // Include auth cookies
     })
 
+    // Handle 404 case (no active sessions found) - return empty array
+    if (response.status === 404) {
+      console.log('No active sessions found for vendor')
+      return []
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Get Active Sessions API Error:', response.status, errorText)
+      throw new Error(`Failed to fetch active sessions: ${response.status} ${response.statusText}`)
+    }
+
     const data = await response.json()
 
     if (!data.success) {
       throw new Error(data.message || 'Failed to get active sessions')
     }
 
-    return data.sessions
+    // Backend returns 'activeSessions' field for active sessions
+    return data.activeSessions || []
   },
 
   // Get recent sessions for vendor (all statuses, limited to recent ones)
@@ -430,6 +470,16 @@ export const paymentSessionAPI = {
         credentials: 'include' // Include auth cookies
       })
 
+      // Handle 404 case (no sessions found) - return empty array
+      if (response.status === 404) {
+        console.log('No payment sessions found for vendor')
+        return []
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
       const data = await response.json()
 
       if (data.success && data.sessions) {
@@ -447,6 +497,11 @@ export const paymentSessionAPI = {
     }
 
     // Final fallback to active sessions
-    return this.getActiveSessions()
+    try {
+      return await this.getActiveSessions()
+    } catch (error) {
+      console.warn('Active sessions also failed, returning empty array')
+      return []
+    }
   },
 }
