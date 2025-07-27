@@ -92,9 +92,8 @@ Vendor → Logs in → Generates QR
 | ---------- | ---------------------- |
 | **Prince Ojoi** | PM / Backend Engineer  |
 | **Emmanuel Onyenegbutu**  | UI / Frontend Engineer |
-| **Isaac Cletus**  | Frontend / Blockchain  |
 | **Omaraka Benjamin**   | Backend / Testing      |
-| **Prince Obeten**   | Frontend Engineer |
+| **Prince Obeten**   | Frontend Engineer. |
 
 ---
 
