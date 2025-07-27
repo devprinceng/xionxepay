@@ -1,48 +1,87 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from './button'
 import { Card } from './card'
 import { QrCode, Copy, Download, RefreshCw } from 'lucide-react'
 import { motion } from 'framer-motion'
+import QRCode from 'qrcode'
 
 interface QRGeneratorProps {
   onGenerate?: (data: { amount: string; description: string }) => void
+  baseUrl?: string
 }
 
-export function QRGenerator({ onGenerate }: QRGeneratorProps) {
+export function QRGenerator({ onGenerate, baseUrl = 'https://xionxepay.vercel.app/pay' }: QRGeneratorProps) {
   const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [qrGenerated, setQrGenerated] = useState(false)
+  const [paymentLink, setPaymentLink] = useState('')
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
 
   const handleGenerate = async () => {
     if (!amount || !description) return
     
     setIsGenerating(true)
     
-    // Simulate QR generation
-    setTimeout(() => {
+    // Generate a unique session ID (in a real app, this would come from the backend)
+    const sessionId = `session_${Math.random().toString(36).substring(2, 10)}`
+    
+    // Create payment link
+    const link = `${baseUrl}/${sessionId}?amount=${amount}&description=${encodeURIComponent(description)}`
+    setPaymentLink(link)
+    
+    // Generate QR code
+    try {
+      const qrDataUrl = await QRCode.toDataURL(link, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      })
+      setQrCodeDataUrl(qrDataUrl)
       setIsGenerating(false)
       setQrGenerated(true)
       onGenerate?.({ amount, description })
-    }, 1500)
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+      setIsGenerating(false)
+    }
   }
 
   const handleReset = () => {
     setAmount('')
     setDescription('')
     setQrGenerated(false)
+    setPaymentLink('')
+    setQrCodeDataUrl(null)
   }
 
   const handleCopy = () => {
-    // In a real app, this would copy the payment link
-    navigator.clipboard.writeText(`Payment: ${amount} USDC for ${description}`)
+    if (paymentLink) {
+      navigator.clipboard.writeText(paymentLink)
+    }
   }
 
   const handleDownload = () => {
-    // In a real app, this would download the QR code image
-    console.log('Downloading QR code...')
+    if (!qrCodeDataUrl) return;
+    
+    try {
+      // Create download link
+      const downloadLink = document.createElement('a');
+      downloadLink.href = qrCodeDataUrl;
+      downloadLink.download = `xionxepay-qr-${new Date().getTime()}.png`;
+      
+      // Trigger download
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+    }
   }
 
   return (
@@ -107,8 +146,20 @@ export function QRGenerator({ onGenerate }: QRGeneratorProps) {
         >
           {/* QR Code Display */}
           <div className="bg-white rounded-2xl p-6 mb-6 mx-auto w-fit">
-            <div className="w-48 h-48 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
-              <QrCode className="w-24 h-24 text-white" />
+            <div className="w-48 h-48 flex items-center justify-center">
+              {qrCodeDataUrl ? (
+                <img 
+                  src={qrCodeDataUrl} 
+                  alt="QR Code"
+                  width={192}
+                  height={192}
+                  className="rounded"
+                />
+              ) : (
+                <div className="w-48 h-48 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg flex items-center justify-center">
+                  <QrCode className="w-24 h-24 text-white" />
+                </div>
+              )}
             </div>
           </div>
 

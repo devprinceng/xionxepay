@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, Suspense } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing, LogOut } from 'lucide-react'
+import { ArrowLeft, Save, User, Building, Wallet, Bell, BellRing, LogOut, Loader2 } from 'lucide-react'
 import { useXion } from '@/contexts/xion-context'
 import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { motion } from 'framer-motion'
@@ -12,7 +12,7 @@ import { useVendor } from '@/contexts/vendor-context'
 import Skeleton from '@/components/ui/skeleton'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-const SettingsPage = () => {
+const SettingsPageContent = () => {
   const searchParams = useSearchParams()
   const router = useRouter()
   const tabParam = searchParams.get('tab')
@@ -42,6 +42,9 @@ const SettingsPage = () => {
     zip: '',
     logo: undefined as File | undefined,
   })
+  
+  // State for form validation errors
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   
   // State for logo preview
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
@@ -124,9 +127,46 @@ const SettingsPage = () => {
 
   const handleBusinessSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { logo, ...rest } = businessForm;
-    await updateBusinessProfile({ ...rest, ...(logo instanceof File ? { logo } : {}) });
-    fetchBusinessProfile();
+    
+    // Reset previous errors
+    setFormErrors({});
+    
+    // Validate all required fields
+    const newErrors: Record<string, string> = {};
+    const requiredFields = [
+      'businessName', 'businessDescription', 'category',
+      'address', 'city', 'state', 'country', 'zip'
+    ];
+    
+    // Check for empty fields
+    requiredFields.forEach(field => {
+      if (!businessForm[field as keyof typeof businessForm]) {
+        newErrors[field] = 'This field is required';
+      }
+    });
+    
+    // Check if logo is provided
+    if (!businessForm.logo && !businessProfile?.logo) {
+      newErrors['logo'] = 'Business logo is required';
+    }
+    
+    // If there are validation errors, display them and stop submission
+    if (Object.keys(newErrors).length > 0) {
+      setFormErrors(newErrors);
+      // Scroll to the first error
+      const firstErrorField = document.querySelector(`[name="${Object.keys(newErrors)[0]}"]`);
+      firstErrorField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    
+    // If validation passes, proceed with submission
+    try {
+      const { logo, ...rest } = businessForm;
+      await updateBusinessProfile({ ...rest, ...(logo instanceof File ? { logo } : {}) });
+      fetchBusinessProfile();
+    } catch (error) {
+      console.error('Failed to update business profile:', error);
+    }
   }
 
   // Tabs are now defined earlier in the component
@@ -264,97 +304,131 @@ const SettingsPage = () => {
                       <h2 className="text-xl font-bold text-white mb-6">Business Information</h2>
                       <div className="space-y-4">
                         <div>
-                          <label className="block text-sm text-gray-400 mb-2">Business Name</label>
+                          <label className="block text-sm text-gray-400 mb-2">
+                            Business Name <span className="text-red-400">*</span>
+                          </label>
                           <input
                             type="text"
                             name="businessName"
                             value={businessForm.businessName}
                             onChange={handleBusinessChange}
-                            className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                            required
+                            className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.businessName ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                           />
+                          {formErrors.businessName && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.businessName}</p>
+                          )}
                         </div>
                         <div>
-                          <label className="block text-sm text-gray-400 mb-2">Business Description</label>
+                          <label className="block text-sm text-gray-400 mb-2">
+                            Business Description <span className="text-red-400">*</span>
+                          </label>
                           <textarea
                             name="businessDescription"
                             value={businessForm.businessDescription}
                             onChange={handleBusinessChange}
                             rows={3}
-                            className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                            required
+                            className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.businessDescription ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                           />
+                          {formErrors.businessDescription && (
+                            <p className="mt-1 text-sm text-red-500">{formErrors.businessDescription}</p>
+                          )}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">Category</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Category <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="category"
                               value={businessForm.category}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.category ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.category && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.category}</p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">Address</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Address <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="address"
                               value={businessForm.address}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.address ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.address && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.address}</p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">City</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              City <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="city"
                               value={businessForm.city}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.city ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.city && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.city}</p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">State</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              State <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="state"
                               value={businessForm.state}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.state ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.state && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.state}</p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">Country</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Country <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="country"
                               value={businessForm.country}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.country ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.country && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.country}</p>
+                            )}
                           </div>
                           <div>
-                            <label className="block text-sm text-gray-400 mb-2">Zip</label>
+                            <label className="block text-sm text-gray-400 mb-2">
+                              Zip <span className="text-red-400">*</span>
+                            </label>
                             <input
                               type="text"
                               name="zip"
                               value={businessForm.zip}
                               onChange={handleBusinessChange}
-                              className="w-full px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500"
-                              required
+                              className={`w-full px-4 py-2 rounded-lg bg-gray-800 border ${formErrors.zip ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none focus:ring-2 focus:ring-aurora-blue-500`}
                             />
+                            {formErrors.zip && (
+                              <p className="mt-1 text-sm text-red-500">{formErrors.zip}</p>
+                            )}
                           </div>
                         </div>
                         <div>
-                          <label className="block text-sm text-gray-400 mb-3">Business Logo</label>
+                          <label className="block text-sm text-gray-400 mb-3">
+                            Business Logo <span className="text-red-400">*</span>
+                          </label>
                           <div className="flex items-center space-x-6">
                             <div className="relative group">
                               <div className="w-24 h-24 rounded-lg bg-gray-800 border-2 border-dashed border-gray-700 flex items-center justify-center overflow-hidden transition-colors group-hover:border-aurora-blue-500/50">
@@ -403,6 +477,9 @@ const SettingsPage = () => {
                               <p className="mt-2 text-xs text-gray-500">
                                 Recommended: 512x512px, JPG, PNG, or WebP. Max 2MB
                               </p>
+                              {formErrors.logo && (
+                                <p className="mt-1 text-xs text-red-500">{formErrors.logo}</p>
+                              )}
                               {businessProfile?.logo && (
                                 <button 
                                   type="button"
@@ -465,4 +542,36 @@ const SettingsPage = () => {
   )
 }
 
-export default SettingsPage
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton width="200px" height={32} />
+          <Skeleton width="300px" height={20} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-1">
+            <Card className="p-4">
+              <div className="space-y-2">
+                <Skeleton width="100%" height={40} />
+                <Skeleton width="100%" height={40} />
+                <Skeleton width="100%" height={40} />
+              </div>
+            </Card>
+          </div>
+          <div className="lg:col-span-3">
+            <Card className="p-6">
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-aurora-blue-400" />
+                <span className="ml-2">Loading settings...</span>
+              </div>
+            </Card>
+          </div>
+        </div>
+      </div>
+    }>
+      <SettingsPageContent />
+    </Suspense>
+  )
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 
 // Base URL for API calls
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Vendor | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [initialized, setInitialized] = useState(false)
 
   // Helper for API calls
   const api = useCallback(async (endpoint: string, options: RequestInit) => {
@@ -84,7 +85,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       method: 'POST',
       body: JSON.stringify(data),
     })
-    if (res.vendor) setUser(res.vendor)
+
+    if (res.vendor) {
+      setUser(res.vendor)
+
+      // Dispatch auth change event for navbar
+      window.dispatchEvent(new CustomEvent('auth-change'))
+    }
+
     return res
   }, [api])
 
@@ -92,9 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await api('/auth/logout', { method: 'POST' })
     setUser(null)
-    // Clear Xion wallet cookie
+
+    // Clear wallet address cookie
     const Cookies = (await import('js-cookie')).default
     Cookies.remove('xion_address')
+
+    // Dispatch auth change event for navbar
+    window.dispatchEvent(new CustomEvent('auth-change'))
   }, [api])
 
   // Send verify OTP
@@ -127,6 +139,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       body: JSON.stringify(data),
     })
   }, [api])
+
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      if (initialized) return
+      
+      try {
+        // Check if token cookie exists
+        const Cookies = (await import('js-cookie')).default
+        const token = Cookies.get('token')
+
+        if (token) {
+          // Try to fetch user profile to verify authentication
+          const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            if (data.vendor) {
+              setUser(data.vendor)
+            }
+          }
+        }
+      } catch (error) {
+        // Silently handle errors - user remains logged out
+        console.error('Auth check failed:', error)
+      } finally {
+        setInitialized(true)
+      }
+    }
+    
+    checkAuthStatus()
+  }, [initialized])
 
   const value: AuthContextType = {
     user,

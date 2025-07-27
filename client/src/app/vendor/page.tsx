@@ -1,25 +1,86 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { QRGenerator } from '@/components/ui/qr-generator'
-import { DollarSign, TrendingUp, Users, Wallet } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, Wallet, Loader2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { useXion } from '@/contexts/xion-context'
 import Cookies from 'js-cookie'
 import { useVendor } from '@/contexts/vendor-context'
+import { paymentAPI, Transaction } from '@/lib/payment-api'
+import { toast } from 'sonner'
+import { MarketTrendWidget } from '@/components/dashboard/market-trend-widget'
 
 const VendorPage = () => {
+  const router = useRouter()
   const { isConnected } = useXion()
-  const { vendorProfile } = useVendor();
+  const { vendorProfile } = useVendor()
+  
+  // State for API data
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState([
+    { label: 'Total Sales', value: '$0.00', icon: DollarSign, change: '+0%' },
+    { label: 'Transactions', value: '0', icon: TrendingUp, change: '+0%' },
+    // { label: 'Customers', value: '0', icon: Users, change: '+0%' },
+  ])
 
-  const stats = [
-    { label: 'Total Sales', value: '$2,450.00', icon: DollarSign, change: '+12%' },
-    { label: 'Transactions', value: '156', icon: TrendingUp, change: '+8%' },
-    { label: 'Customers', value: '89', icon: Users, change: '+15%' },
-  ]
+  // Fetch transactions and calculate stats
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!isConnected) return
+      
+      try {
+        setLoading(true)
+        const allTransactions = await paymentAPI.getAllTransactions()
+        // console.log('🔍 DEBUG: Transaction data structure:', allTransactions[0])
+        setTransactions(allTransactions)
+        
+        // Calculate stats from real data
+        const completedTransactions = allTransactions.filter(t => t.status === 'completed')
+        const totalSales = completedTransactions.reduce((sum, t) => sum + (t.amount || 0), 0)
+        const totalTransactions = allTransactions.length
+        
+        // Get unique customers (basic count based on customer field if available)
+        const uniqueCustomers = new Set(
+          allTransactions
+            .filter(t => t.customer)
+            .map(t => t.customer)
+        ).size
+        
+        setStats([
+          { 
+            label: 'Total Sales', 
+            value: `${totalSales.toFixed(6)}`, 
+            icon: DollarSign, 
+            change: '+0%' // TODO: Calculate month-over-month change
+          },
+          { 
+            label: 'Transactions', 
+            value: totalTransactions.toString(), 
+            icon: TrendingUp, 
+            change: '+0%' // TODO: Calculate month-over-month change
+          },
+          // { 
+          //   label: 'Customers', 
+          //   value: uniqueCustomers.toString(), 
+          //   icon: Users, 
+          //   change: '+0%' // TODO: Calculate month-over-month change
+          // },
+        ])
+      } catch (error) {
+        console.error('Failed to fetch transactions:', error)
+        toast.error('Failed to load transaction data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTransactions()
+  }, [isConnected])
 
   return (
     <div className="space-y-6">
@@ -75,8 +136,15 @@ const VendorPage = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-gray-400 text-sm">{stat.label}</p>
-                      <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
-                      <p className="text-aurora-blue-400 text-sm mt-1">{stat.change} from last month</p>
+                      {loading ? (
+                        <div className="flex items-center mt-1">
+                          <Loader2 className="w-5 h-5 animate-spin text-gray-400 mr-2" />
+                          <p className="text-xl font-bold text-gray-400">Loading...</p>
+                        </div>
+                      ) : (
+                        <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+                      )}
+                      {/* <p className="text-aurora-blue-400 text-sm mt-1">{stat.change} from last month</p> */}
                     </div>
                     <div className="bg-gradient-to-r from-aurora-blue-500 to-aurora-cyan-500 p-3 rounded-lg">
                       <Icon className="w-6 h-6 text-white" />
@@ -87,49 +155,87 @@ const VendorPage = () => {
             })}
           </motion.div>
 
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* QR Code Generator */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <QRGenerator onGenerate={(data) => console.log('QR Generated:', data)} />
-            </motion.div>
+          {/* Recent Transactions and Market Trend */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+          >
+           
+            
+            {/* Market Trend Widget - Takes 1/3 of the space */}
+            <div className="lg:col-span-1">
+              <MarketTrendWidget />
+            </div>
 
-            {/* Recent Transactions */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <Card className="p-6">
-                <h2 className="text-xl font-bold text-white mb-4">Recent Transactions</h2>
-                <div className="space-y-4">
-                  {[
-                    { id: '1', amount: '$25.00', description: 'Coffee & Pastry', time: '2 min ago', status: 'completed' },
-                    { id: '2', amount: '$15.50', description: 'Sandwich', time: '15 min ago', status: 'completed' },
-                    { id: '3', amount: '$8.75', description: 'Tea', time: '1 hour ago', status: 'completed' },
-                  ].map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg">
-                      <div>
-                        <p className="text-white font-medium">{transaction.description}</p>
-                        <p className="text-gray-400 text-sm">{transaction.time}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-aurora-blue-400 font-bold">{transaction.amount}</p>
-                        <p className="text-green-400 text-sm capitalize">{transaction.status}</p>
-                      </div>
+             {/* Recent Transactions - Takes 2/3 of the space */}
+             <div className="lg:col-span-2 max-w-lg">
+              <Card className="bg-gray-800/50 p-6 rounded-xl overflow-hidden h-full">
+                <h3 className="text-lg font-semibold text-white mb-4">Recent Transactions</h3>
+                
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-8 h-8 text-aurora-blue-500 animate-spin" />
+                  </div>
+                ) : transactions.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="text-left text-gray-400 text-sm">
+                          <th className="pb-3">Date</th>
+                          <th className="pb-3">Amount</th>
+                          <th className="pb-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.slice(0, 5).map((transaction, index) => (
+                          <tr key={transaction._id || index} className="border-t border-gray-700/50">
+                            <td className="py-3 text-white">
+                              {new Date((transaction as any).createdAt || Date.now()).toLocaleDateString()}
+                            </td>
+                            <td className="py-3 text-white">
+                              {(transaction.amount || 0).toFixed(6)} XION
+                            </td>
+                            <td className="py-3">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                transaction.status === 'completed' ? 'bg-green-900/30 text-green-400' :
+                                transaction.status === 'pending' ? 'bg-yellow-900/30 text-yellow-400' :
+                                'bg-red-900/30 text-red-400'
+                              }`}>
+                                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    
+                    <div className="mt-4 text-center">
+                      <Button 
+                        variant="ghost" 
+                        className="text-aurora-blue-400 hover:text-aurora-blue-300"
+                        onClick={() => router.push('/vendor/transactions')}
+                      >
+                        View All Transactions
+                      </Button>
                     </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full mt-4">
-                  View All Transactions
-                </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400 mb-4">No transactions yet</p>
+                    <Button 
+                      variant="outline" 
+                      className="border-aurora-blue-500 text-aurora-blue-400 hover:bg-aurora-blue-500/10"
+                      onClick={() => router.push('/vendor/qr')}
+                    >
+                      Create Payment QR
+                    </Button>
+                  </div>
+                )}
               </Card>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </>
       )}
     </div>

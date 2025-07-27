@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import Cookies from 'js-cookie'
+import { useAbstraxionSigningClient } from '@burnt-labs/abstraxion'
 
 // Define the context type
 export type XionContextType = {
@@ -23,6 +24,7 @@ export function XionProvider({ children }: { children: React.ReactNode }) {
   const [xionAddress, setXionAddress] = useState<string | null>(null)
   const [isConnecting, setIsConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { logout } = useAbstraxionSigningClient()
 
   // Load the Xion address from cookies on mount and when cookies change
   useEffect(() => {
@@ -72,16 +74,27 @@ export function XionProvider({ children }: { children: React.ReactNode }) {
 
   // Disconnect from Xion wallet
   const disconnectXion = useCallback(() => {
+    // Call Abstraxion logout first
+    if (logout) {
+      logout()
+    }
+    
     // Remove the address from state and cookies
     setXionAddress(null)
     Cookies.remove(XION_ADDRESS_COOKIE)
     
-    // The actual logout will be handled in the XionConnectButton component
-    // This just clears the local state and cookies
+    // Clear any other wallet-related cookies or local storage
+    try {
+      // Clear any Abstraxion-related storage
+      localStorage.removeItem('abstraxion-account')
+      localStorage.removeItem('abstraxion-client')
+    } catch (error) {
+      console.warn('Failed to clear localStorage:', error)
+    }
     
     // Dispatch a custom event to notify components that we've logged out
     window.dispatchEvent(new CustomEvent('xion_logout'))
-  }, [])
+  }, [logout])
 
   // Save the Xion address to cookies when it changes
   useEffect(() => {

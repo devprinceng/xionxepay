@@ -307,6 +307,8 @@ const ProductsPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+
+                  {/* //TODO fix eidt and delete button */}
                   <button
                     onClick={() => handleEdit(product)}
                     className="p-1 text-gray-400 hover:text-aurora-blue-400 transition-colors"
@@ -329,10 +331,10 @@ const ProductsPage = () => {
                 <div className="flex items-center space-x-2">
                   <DollarSign className="w-4 h-4 text-aurora-blue-400" />
                   <span className="text-xl font-bold text-aurora-blue-400">
-                    {product.price.toFixed(2)}
+                    {product.price}
                   </span>
                 </div>
-                <button
+                {/* <button
                   onClick={() => toggleActive(product._id, product.isActive)}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                     product.isActive
@@ -341,7 +343,7 @@ const ProductsPage = () => {
                   }`}
                 >
                   {product.isActive ? 'Active' : 'Inactive'}
-                </button>
+                </button> */}
               </div>
             </Card>
           ))}

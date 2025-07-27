@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Wallet, LogOut, RefreshCw, ExternalLink } from 'lucide-react'
@@ -11,8 +12,10 @@ import { useVendor } from '@/contexts/vendor-context'
 import Skeleton from '@/components/ui/skeleton'
 import { useAbstraxionAccount, useAbstraxionSigningClient } from '@burnt-labs/abstraxion'
 import { coins } from '@cosmjs/proto-signing'
+import { toast } from 'sonner'
 
 const WalletPage = () => {
+  const router = useRouter()
   const { xionAddress, isConnected, disconnectXion } = useXion()
   const { vendorProfile, loading } = useVendor()
   const { data: accountData } = useAbstraxionAccount()
@@ -165,7 +168,11 @@ const WalletPage = () => {
                             variant="outline" 
                             size="sm" 
                             className="text-red-400 hover:text-red-300 hover:bg-red-500/10 border-red-500/20"
-                            onClick={() => disconnectXion()}
+                            onClick={() => {
+                              disconnectXion()
+                              toast.success('Wallet disconnected successfully')
+                              router.push('/vendor')
+                            }}
                           >
                             <LogOut className="w-4 h-4 mr-2" />
                             Disconnect Wallet
@@ -175,7 +182,7 @@ const WalletPage = () => {
                             variant="outline"
                             size="sm"
                             className="text-aurora-blue-400 hover:text-aurora-blue-300 border-aurora-blue-500/20"
-                            onClick={() => window.open('https://explorer.burnt.com/xion-testnet-1', '_blank')}
+                            onClick={() => window.open('https://explorer.burnt.com/xion-testnet-2', '_blank')}
                           >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             View in Explorer

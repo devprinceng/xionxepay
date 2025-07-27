@@ -53,10 +53,10 @@ function VerifyEmailVisual() {
 
 function VerifyEmailPageContent() {
   const { otp, errors, setOtp, setErrors, reset } = useVerifyEmailForm()
-  const { sendVerifyOtp, verifyEmail, loading: authLoading, error } = useAuth()
+  const { sendResetOTP, verifyEmail, loading: authLoading, error } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const emailFromQuery = searchParams.get('id') || ''
+  const emailFromQuery = searchParams.get('email') || ''
   const otpFromQuery = searchParams.get('otp') || ''
   const [email, setEmail] = useState(emailFromQuery)
   const [success, setSuccess] = useState(false)
@@ -73,9 +73,12 @@ function VerifyEmailPageContent() {
     setResent(false)
     setLoading(true)
     try {
-      await sendVerifyOtp(email)
+      await sendResetOTP(email)
       setResent(true)
-    } catch {}
+      toast.success('Verification code resent! Check your email.')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to resend verification code')
+    }
     setLoading(false)
   }
 

@@ -3,14 +3,11 @@ import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
 import { cn } from '@/lib/utils'
 import React from 'react'
-import { AuthProvider } from '../contexts/auth-context'
 import { Toaster } from 'sonner'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
-import PaymentQRProvider from '@/contexts/PaymentQRContext'
 import { XionAbstraxionProvider } from '@/components/xion/abstraxion-provider'
 import { XionProvider } from '@/contexts/xion-context'
 import XionErrorBoundary from '@/components/xion/error-boundary'
-import { ClientConditionalProviders } from '@/components/ClientConditionalProviders'
+import { ConditionalAuthProviders } from '@/components/ConditionalAuthProviders'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -54,19 +51,15 @@ export default function RootLayout({
           {/* Main content */}
           <div className="relative z-10">
             <Toaster position="top-center" richColors closeButton />
-            <AuthProvider>
-              <XionErrorBoundary>
-                <XionAbstraxionProvider>
-                  <XionProvider>
-                    <PaymentQRProvider>
-                      <ClientConditionalProviders>
-                        <ProtectedRoute>{children}</ProtectedRoute>
-                      </ClientConditionalProviders>
-                    </PaymentQRProvider>
-                  </XionProvider>
-                </XionAbstraxionProvider>
-              </XionErrorBoundary>
-            </AuthProvider>
+            <XionErrorBoundary>
+              <XionAbstraxionProvider>
+                <XionProvider>
+                  <ConditionalAuthProviders>
+                    {children}
+                  </ConditionalAuthProviders>
+                </XionProvider>
+              </XionAbstraxionProvider>
+            </XionErrorBoundary>
           </div>
         </div>
       </body>

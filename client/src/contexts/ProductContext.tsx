@@ -60,6 +60,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
       const data = await res.json()
       
       if (!res.ok) {
+        console.error('🚨 API Request Failed:')
+        console.error('- Status:', res.status, res.statusText)
+        console.error('- URL:', url)
+        console.error('- Method:', options.method || 'GET')
+        console.error('- Response Data:', data)
+        
         if (res.status === 401) {
           // Handle unauthorized access
           if (!window.location.pathname.startsWith('/signin')) {
@@ -87,9 +93,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Fetch all products for the authenticated vendor
   const fetchProducts = useCallback(async (): Promise<void> => {
     try {
-      // console.log('Fetching products...');
+      // // console.log('Fetching products...');
       const data = await api('/product', { method: 'GET' });
-      // console.log('Products data:', data);
+      // // console.log('Products data:', data);
       if (data && data.products) {
         setProducts(data.products);
       }
@@ -151,19 +157,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Update an existing product
   const updateProduct = useCallback(async (productId: string, productData: Partial<Product>): Promise<Product | null> => {
     try {
-      // Create payload according to API doc
-      const payload: Record<string, any> = {
-        productId // Required parameter
-      }
+      // Create payload with only name and price as per requirements
+      const payload: Record<string, any> = {}
       
       // Add fields that can be updated
       if (productData.name !== undefined) payload.name = productData.name
       if (productData.price !== undefined) payload.price = productData.price
-      if (productData.description !== undefined) payload.description = productData.description
-      if (productData.category !== undefined) payload.category = productData.category
-      if (productData.isActive !== undefined) payload.isActive = productData.isActive
       
-      const data = await api('/product/single', {
+      // Send productId as URL parameter and name/price in request body
+      const data = await api(`/product/${productId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -187,11 +189,11 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ''
   // Delete a product
   const deleteProduct = useCallback(async (productId: string): Promise<boolean> => {
     try {
-      // For DELETE requests with a body, we need to use the fetch API directly
-      const data = await api('/product/single', {
+      // Pass productId as URL parameter
+      const data = await api(`/product/${productId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId }),
+        headers: { 'Content-Type': 'application/json' }
+        // No body needed as productId is in the URL
       })
       
       if (data && data.success) {

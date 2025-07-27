@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
@@ -8,58 +8,100 @@ import { useXion } from '@/contexts/xion-context'
 import { useAbstraxionSigningClient, useAbstraxionAccount } from '@burnt-labs/abstraxion'
 import { XionConnectButton } from '@/components/xion/xion-connect-button'
 import { toast } from 'sonner'
-import { ArrowLeft, CheckCircle, XCircle, Loader2, Clock, Wallet } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, Loader2, Clock, Wallet, Download } from 'lucide-react'
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { coins } from '@cosmjs/proto-signing'
-import { paymentAPI, transactionsAPI } from '@/lib/payment-api'
+import { paymentSessionAPI, paymentAPI } from '@/lib/payment-api'
+import { EnhancedReceipt } from '@/components/ui/enhanced-receipt'
+import { EnhancedReceiptGenerator } from '@/utils/receipt-generator'
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const params = useParams()
   const { xionAddress, isConnected } = useXion()
   
-  // Get transaction ID from URL
-  const transactionId = params.productId as string
+  // Get session ID from URL (the productId param is actually the sessionId)
+  const sessionId = params.productId as string
   
-  // Load transaction data
-  const [transactionData, setTransactionData] = useState<any>(null)
+  // Load payment session data (customer-facing)
+  const [sessionData, setSessionData] = useState<any>(null)
   const [dataLoaded, setDataLoaded] = useState(false)
   
   useEffect(() => {
-    // Load transaction data from the new API
-    const fetchTransactionData = async () => {
+    // Load payment session data using the sessionId directly
+    const fetchSessionData = async () => {
       try {
-        const transaction = await paymentAPI.getTransaction(transactionId)
-        if (transaction) {
-          setTransactionData(transaction)
+        const sessionResponse = await paymentSessionAPI.getSessionStatus(sessionId)
+        if (sessionResponse) {
+          setSessionData(sessionResponse)
+          
+          // Check if the session is already expired on the server
+          if (sessionResponse.status === 'expired') {
+            setPaymentStatus('expired')
+            setTimeRemaining(0)
+            setTimerProgress(0)
+          } else if (sessionResponse.status === 'completed') {
+            setPaymentStatus('completed')
+            // If there's a transaction hash, set it (check both possible field names)
+            if (sessionResponse.txHash) {
+              setTransactionHash(sessionResponse.txHash)
+            } else if (sessionResponse.transactionHash) {
+              setTransactionHash(sessionResponse.transactionHash)
+            }
+          } else {
+            // Calculate session duration and remaining time based on server timestamps
+            const createdAt = new Date(sessionResponse.createdAt).getTime()
+            const expiresAt = new Date(sessionResponse.expiresAt).getTime()
+            const now = Date.now()
+            
+
+            // Calculate total session duration from server timestamps
+            const totalDurationMs = expiresAt - createdAt
+            const totalDurationSeconds = Math.floor(totalDurationMs / 1000)
+            setSessionDuration(totalDurationSeconds)
+            
+            // Calculate remaining time
+            const remainingMs = expiresAt - now
+            
+            if (remainingMs <= 0) {
+              setPaymentStatus('expired')
+              setTimeRemaining(0)
+              setTimerProgress(0)
+            } else {
+              const remainingSeconds = Math.floor(remainingMs / 1000)
+              setTimeRemaining(remainingSeconds)
+              setTimerProgress((remainingSeconds / totalDurationSeconds) * 100)
+            }
+          }
         } else {
-          toast.error('Transaction not found')
+          toast.error('Payment session not found')
         }
       } catch (error) {
-        console.error('Error fetching transaction data:', error)
-        toast.error('Failed to load transaction data')
+        console.error('Error fetching payment session data:', error)
+        toast.error('Failed to load payment session data')
       } finally {
         setDataLoaded(true)
       }
     }
     
-    fetchTransactionData()
-  }, [transactionId])
+    fetchSessionData()
+  }, [sessionId])
   
-  // Extract payment details from loaded data
-  const productId = transactionData?.productId || transactionId
-  const amount = transactionData?.amount?.toString() || '0'
-  const description = transactionData?.description || 'Payment'
-  const recipient = '' // Recipient will be determined by the vendor's wallet
-  const txId = transactionData?.transactionId || transactionId
+  // Extract payment details from loaded session data
+  const productId = sessionData?.productId || sessionId
+  const amount = sessionData?.expectedAmount || '0'
+  const description = sessionData?.memo || 'Payment' // Simple description for customer page
+  const recipient = sessionData?.vendorWallet || '' // Recipient will be determined by the vendor's wallet
+  const txId = sessionData?.transactionId || sessionId
+  const currentSessionId = sessionData?.sessionId || sessionId
   
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'expired'>('pending')
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
   
-  // Session timer state - 15 minutes in seconds
-  const SESSION_DURATION = 15 * 60
-  const [timeRemaining, setTimeRemaining] = useState(SESSION_DURATION)
+  // Session timer state - will be calculated from server timestamps
+  const [timeRemaining, setTimeRemaining] = useState(0)
   const [timerProgress, setTimerProgress] = useState(100)
+  const [sessionDuration, setSessionDuration] = useState(10 * 60) // Default 10 minutes
   
   // Format time remaining as MM:SS
   const formatTimeRemaining = (seconds: number) => {
@@ -68,30 +110,64 @@ export default function PaymentPage() {
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
   }
   
-  // Initialize and run the timer
+  // Initialize and run the timer with periodic server sync
   useEffect(() => {
     // Only run the timer if payment is pending
-    if (paymentStatus !== 'pending') return
-    
+    if (paymentStatus !== 'pending' || !sessionData) return
+
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          setPaymentStatus('expired')
-          return 0
-        }
-        return prev - 1
-      })
+      // Calculate remaining time based on server expiresAt timestamp
+      const expiresAt = new Date(sessionData.expiresAt).getTime()
+      const now = Date.now()
+      const remainingMs = expiresAt - now
+
+      if (remainingMs <= 0) {
+        clearInterval(timer)
+        setPaymentStatus('expired')
+        setTimeRemaining(0)
+        setTimerProgress(0)
+      } else {
+        const remainingSeconds = Math.floor(remainingMs / 1000)
+        setTimeRemaining(remainingSeconds)
+      }
     }, 1000)
-    
-    // Clean up the timer
-    return () => clearInterval(timer)
-  }, [paymentStatus])
+
+    // Also periodically check server status to handle edge cases
+    const statusChecker = setInterval(async () => {
+      try {
+        const sessionResponse = await paymentSessionAPI.getSessionStatus(sessionId)
+        if (sessionResponse && sessionResponse.status !== paymentStatus) {
+          if (sessionResponse.status === 'expired') {
+            setPaymentStatus('expired')
+            setTimeRemaining(0)
+            setTimerProgress(0)
+          } else if (sessionResponse.status === 'completed') {
+            setPaymentStatus('completed')
+            if (sessionResponse.txHash) {
+              setTransactionHash(sessionResponse.txHash)
+            } else if (sessionResponse.transactionHash) {
+              setTransactionHash(sessionResponse.transactionHash)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session status:', error)
+      }
+    }, 30000) // Check every 30 seconds
+
+    // Clean up the timers
+    return () => {
+      clearInterval(timer)
+      clearInterval(statusChecker)
+    }
+  }, [paymentStatus, sessionData, sessionId])
   
   // Update progress bar
   useEffect(() => {
-    setTimerProgress((timeRemaining / SESSION_DURATION) * 100)
-  }, [timeRemaining, SESSION_DURATION])
+    if (sessionDuration > 0) {
+      setTimerProgress((timeRemaining / sessionDuration) * 100)
+    }
+  }, [timeRemaining, sessionDuration])
   
   // Get Xion client and account - only when connected to prevent authentication errors
   const { client: xionClient } = useAbstraxionSigningClient()
@@ -124,6 +200,30 @@ export default function PaymentPage() {
   // Check if wallet is properly authenticated
   // We use the XionContext isConnected state and verify we have all required components
   const isWalletAuthenticated = isConnected && accountConnected && walletAddress && xionClient
+  
+  // Download transaction receipt using enhanced receipt generator
+  const downloadReceipt = async () => {
+    if (!transactionHash || !sessionData) {
+      toast.error('Transaction data not available')
+      return
+    }
+
+    try {
+      const receiptGenerator = new EnhancedReceiptGenerator()
+      await receiptGenerator.downloadReceipt({
+        transactionHash,
+        amount,
+        productName: description,
+        sessionId: currentSessionId,
+        timestamp: new Date().toISOString(),
+        recipientAddress: recipient,
+        vendorName: 'XionxePay Vendor'
+      })
+    } catch (error) {
+      console.error('Failed to download receipt:', error)
+      toast.error('Failed to generate receipt')
+    }
+  }
   
   // Process payment
   const handlePayment = async () => {
@@ -161,19 +261,61 @@ export default function PaymentPage() {
         recipient,
         coins(amountInUxion, "uxion"),
         "auto", // Use auto for gasless transactions on Xion
-        description || "Payment via XionXEPay"
+        description || "Payment via XionxePay"
       )
       
       // Get the transaction hash from the result
+      console.log(result)
       const transactionHash = result.transactionHash
       setTransactionHash(transactionHash)
       setPaymentStatus('completed')
       
-      // Update the transaction status using the new API
+      // Complete the payment session using the Payment Session API
       try {
-        await paymentAPI.updateTransaction(txId, 'completed', transactionHash)
+        if (currentSessionId) {
+          console.log('Completing payment session with:', { 
+            sessionId: currentSessionId, 
+            transactionHash, 
+            status: 'completed' 
+          })
+          
+          // Send sessionId, transactionHash, and status in the request body
+          const sessionResponse = await paymentSessionAPI.completeSession(
+            currentSessionId, 
+            transactionHash, 
+            'completed'
+          )
+          
+          console.log('Session completion response:', sessionResponse)
+          
+          // Update the transaction with the transaction ID from the session response
+          if (sessionResponse && sessionResponse.transactionId) {
+            try {
+              const transactionUpdateData = {
+                status: 'completed',
+                transactionId: sessionResponse.transactionId,
+                transactionHash
+              }
+              
+              console.log('Updating transaction with:', transactionUpdateData)
+              
+              // Send PUT request to update the transaction
+              await paymentAPI.updateTransaction(
+                sessionResponse.transactionId,
+                'completed',
+                transactionHash
+              )
+              console.log('Transaction updated successfully')
+            } catch (txError) {
+              console.error('Failed to update transaction:', txError)
+              // Continue anyway as the blockchain transaction and session were successful
+            }
+          } else {
+            console.error('Missing transactionId in session response:', sessionResponse)
+          }
+        }
       } catch (error) {
-        console.error('Failed to update transaction status:', error)
+        console.error('Failed to complete payment session:', error)
         // Continue anyway as the blockchain transaction was successful
       }
       
@@ -197,21 +339,21 @@ export default function PaymentPage() {
         <Card>
           <CardContent className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin" />
-            <span className="ml-2">Loading payment details...</span>
+            <span className="ml-2">Loading payment session...</span>
           </CardContent>
         </Card>
       </div>
     )
   }
   
-  // Show error state if transaction data not found
-  if (!transactionData) {
+  // Show error state if session data not found
+  if (!sessionData) {
     return (
       <div className="container max-w-md mx-auto py-8 px-4">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <XCircle className="w-12 h-12 text-red-500 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Payment Not Found</h2>
+            <h2 className="text-xl font-semibold mb-2">Payment Session Not Found</h2>
             <p className="text-muted-foreground mb-4">
               This payment link is invalid or has expired.
             </p>
@@ -224,9 +366,28 @@ export default function PaymentPage() {
     )
   }
 
+  // Show full-width success page when payment is completed
+  if (paymentStatus === 'completed' && transactionHash) {
+    return (
+      <div className="container max-w-4xl mx-auto py-8 px-4">
+        <div className="flex justify-center">
+          <EnhancedReceipt
+            transactionHash={transactionHash}
+            amount={amount}
+            productName={description}
+            sessionId={currentSessionId}
+            timestamp={new Date().toISOString()}
+            recipientAddress={recipient}
+            onDownload={downloadReceipt}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="container max-w-md mx-auto py-8 px-4">
-     
+
       <Card>
         <CardHeader>
           <CardTitle>Payment Request</CardTitle>
@@ -280,15 +441,7 @@ export default function PaymentPage() {
             )}
             
             <div className=''>
-            {paymentStatus === 'completed' && (
-              <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-md flex items-start space-x-2 text-green-600 dark:text-green-400">
-                <CheckCircle className="w-5 h-5 flex-shrink-0" />
-                <div className='flex flex-col w-full'>
-                  <p className="font-medium">Payment Successful</p>
-                  <p className="text-xs mt-1 break-all">Transaction ID: {transactionHash}</p>
-                </div>
-              </div>
-            )}
+            {/* Success state is now handled separately above */}
             
             {paymentStatus === 'failed' && (
               <div className="bg-red-50 dark:bg-red-950/30 p-4 rounded-md flex items-center space-x-2 text-red-600 dark:text-red-400">
@@ -368,15 +521,15 @@ export default function PaymentPage() {
           {paymentStatus === 'expired' && (
             <div className="space-y-2 w-full">
               <Button 
-                onClick={() => {
-                  // Reset timer and payment status
-                  setTimeRemaining(SESSION_DURATION)
-                  setTimerProgress(100)
-                  setPaymentStatus('pending')
+                onClick={async () => {
+                  // For server-side expired sessions, we need to create a new session
+                  // For now, just show a message that they need to generate a new QR code
+                  toast.info('This payment session has expired. Please ask the vendor to generate a new QR code.')
                 }}
                 className="w-full"
+                variant="outline"
               >
-                Restart Payment Session
+                Session Expired
               </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link href="/">Cancel</Link>
@@ -386,5 +539,22 @@ export default function PaymentPage() {
         </CardFooter>
       </Card>
     </div>
+  )
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="container max-w-md mx-auto py-8 px-4">
+        <Card>
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-aurora-blue-400" />
+            <span className="ml-2">Loading payment page...</span>
+          </CardContent>
+        </Card>
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   )
 }
