@@ -15,8 +15,6 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
     return;
   }
 
-  const expirationTime = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 minutes
-
   try {
     const transactionId = v4();
 
@@ -34,7 +32,6 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         amount:expectedAmount,
         description:memo,
         vendorWallet,
-        expiresAt: expirationTime,
       });
 
       await PaymentSession.create({
@@ -45,7 +42,7 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         memo,
         transactionId,
         vendorWallet,
-        expiresAt: expirationTime,
+        
       });
     } else {
       await PaymentSession.create({
@@ -56,7 +53,7 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         memo,
         transactionId,
         vendorWallet,
-        expiresAt: expirationTime,
+        
       });
       await Transaction.create({
         transactionId,
@@ -65,7 +62,7 @@ export const startPaymentSession = async (req: Request, res: Response): Promise<
         amount:expectedAmount,
         description:memo,
         vendorWallet,
-        expiresAt: expirationTime,
+        
       });
     }
 
@@ -235,3 +232,6 @@ export const getAllPaymentSessions = async (req: Request, res: Response): Promis
     res.status(500).json({ success: false, message: 'Unable to fetch sessions', error: String(error) });
   }
 };
+
+
+
